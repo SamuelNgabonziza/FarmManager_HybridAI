@@ -1,0 +1,24 @@
+// Top-level build file.
+//
+// Toolchain versions here must stay aligned with gradle/wrapper/gradle-wrapper.properties.
+// - Gradle 9.6.0  -> wrapper
+// - AGP 8.10.1    -> requires Gradle 8.11.1+ ; works with the 9.x wrapper
+// - Kotlin 2.2.10 -> with the Compose Compiler Gradle plugin (the compiler is now
+//                    shipped with Kotlin; `composeOptions.kotlinCompilerExtensionVersion`
+//                    must NOT be set any more)
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.10.1'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.10'
+        classpath 'org.jetbrains.kotlin:compose-compiler-gradle-plugin:2.2.10'
+        classpath 'com.google.gms:google-services:4.4.2'
+    }
+}
+
+tasks.register('clean', Delete) {
+    delete layout.buildDirectory
+}

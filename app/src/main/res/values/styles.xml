@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        The app UI is built entirely with Jetpack Compose, so the platform theme only
+        needs to be a NoActionBar theme. The night variant lives in values-night/styles.xml
+        so the window background and system bar icons match the Compose dark theme.
+    -->
+    <style name="Theme.FarmOs" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>
