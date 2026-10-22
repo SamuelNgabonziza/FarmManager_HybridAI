@@ -13,7 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
     primary = FarmGreenDark,
-    onPrimary = Color(0xFF00390A),
+    onPrimary = Color(0xFF17331D),
     primaryContainer = FarmGreenContainerDark,
     onPrimaryContainer = FarmGreenContainer,
     secondary = FarmTealDark,
@@ -21,15 +21,21 @@ private val DarkColorScheme = darkColorScheme(
     secondaryContainer = FarmTealContainerDark,
     onSecondaryContainer = FarmTealContainer,
     tertiary = FarmAmberDark,
-    onTertiary = Color(0xFF452B00),
+    onTertiary = Color(0xFF332308),
     tertiaryContainer = FarmAmberContainerDark,
     onTertiaryContainer = FarmAmberContainer,
-    background = FarmDarkBackground,
+    background = Color.Transparent,
     onBackground = FarmDarkOnBackground,
     surface = FarmDarkSurface,
     onSurface = FarmDarkOnSurface,
     surfaceVariant = FarmDarkSurfaceVariant,
-    onSurfaceVariant = FarmDarkOnSurfaceVariant
+    onSurfaceVariant = FarmDarkOnSurfaceVariant,
+    outline = Color(0xFF637066),
+    outlineVariant = Color(0xFF435147),
+    error = Color(0xFFFFA7AE),
+    onError = Color(0xFF520014),
+    errorContainer = Color(0xFF5C3036),
+    onErrorContainer = Color(0xFFFFDADF)
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -45,12 +51,18 @@ private val LightColorScheme = lightColorScheme(
     onTertiary = Color.White,
     tertiaryContainer = FarmAmberContainer,
     onTertiaryContainer = Color(0xFF261900),
-    background = FarmLightBackground,
+    background = Color.Transparent,
     onBackground = FarmLightOnBackground,
     surface = FarmLightSurface,
     onSurface = FarmLightOnSurface,
     surfaceVariant = FarmLightSurfaceVariant,
-    onSurfaceVariant = FarmLightOnSurfaceVariant
+    onSurfaceVariant = FarmLightOnSurfaceVariant,
+    outline = Color(0xFF86968A),
+    outlineVariant = Color(0xFFD8E6DA),
+    error = Color(0xFFB3263E),
+    onError = Color.White,
+    errorContainer = Color(0xFFFCE1E4),
+    onErrorContainer = Color(0xFF4C1821)
 )
 
 @Composable

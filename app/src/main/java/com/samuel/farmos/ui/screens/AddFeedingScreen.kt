@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,6 +25,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -33,8 +35,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.samuel.farmos.data.FeedingRecord
+import com.samuel.farmos.ui.theme.FarmOsTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,6 +49,12 @@ fun AddFeedingScreen(
     var feedType by remember { mutableStateOf("") }
     var quantityKgText by remember { mutableStateOf("") }
     var costUgxText by remember { mutableStateOf("") }
+    fun save() {
+        val qty = quantityKgText.toDoubleOrNull() ?: 0.0
+        if (feedType.isNotBlank() && qty > 0) onSave(FeedingRecord(
+            feedType = feedType.trim(), quantityKg = qty, costUgx = costUgxText.toDoubleOrNull(), dateMillis = System.currentTimeMillis()
+        ))
+    }
 
     Scaffold(
         topBar = {
@@ -55,6 +65,7 @@ fun AddFeedingScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = { TextButton(onClick = ::save, enabled = feedType.isNotBlank() && (quantityKgText.toDoubleOrNull() ?: 0.0) > 0.0) { Text("Save", fontWeight = FontWeight.Bold) } },
                 colors = FarmUi.topAppBarColors()
             )
         }
@@ -69,16 +80,17 @@ fun AddFeedingScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
+                    .padding(16.dp)
+                    .imePadding(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         OutlinedTextField(
@@ -113,31 +125,20 @@ fun AddFeedingScreen(
                             colors = FarmUi.textFieldColors()
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Button(
-                            onClick = {
-                                val qty = quantityKgText.toDoubleOrNull() ?: 0.0
-                                if (feedType.isNotBlank() && qty > 0) {
-                                    val record = FeedingRecord(
-                                        feedType = feedType.trim(),
-                                        quantityKg = qty,
-                                        costUgx = costUgxText.toDoubleOrNull(),
-                                        dateMillis = System.currentTimeMillis()
-                                    )
-                                    onSave(record)
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = feedType.isNotBlank() && quantityKgText.toDoubleOrNull() != null,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = FarmUi.buttonColors()
-                        ) {
-                            Text("Save Feeding Record")
-                        }
                     }
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AddFeedingScreenPreview() {
+    FarmOsTheme {
+        AddFeedingScreen(
+            onSave = {},
+            onBack = {}
+        )
     }
 }

@@ -20,7 +20,7 @@ import java.util.UUID
 
 class GoogleAuthUiClient(
     private val context: Context,
-    private val firebaseAuth: FirebaseAuth
+    private val firebaseAuth: FirebaseAuth?
 ) {
     var lastErrorMessage: String? = null
         private set
@@ -38,6 +38,11 @@ class GoogleAuthUiClient(
 
     suspend fun signIn(): String? {
         lastErrorMessage = null
+        if (firebaseAuth == null) {
+            lastErrorMessage = "Firebase is not initialized."
+            Log.e("GoogleAuth", lastErrorMessage!!)
+            return null
+        }
         val activity = findActivity(context) ?: run {
             lastErrorMessage = "Google Sign-In requires an active Activity window."
             Log.e("GoogleAuth", lastErrorMessage!!)

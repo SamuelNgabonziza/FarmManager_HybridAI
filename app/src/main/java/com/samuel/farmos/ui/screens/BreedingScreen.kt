@@ -16,10 +16,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -31,8 +33,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.samuel.farmos.data.BreedingEventType
 import com.samuel.farmos.data.BreedingRecord
+import com.samuel.farmos.ui.components.FarmDeleteButton
+import com.samuel.farmos.ui.components.FarmEmptyState
+import com.samuel.farmos.ui.theme.FarmOsTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -42,28 +49,24 @@ import java.util.Locale
 fun BreedingScreen(
     records: List<BreedingRecord>,
     onAddRecord: () -> Unit,
+    onDeleteRecord: (String) -> Unit,
     onBack: () -> Unit
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Breeding Records", fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
+                title = { Text("All Breeding Events", fontWeight = FontWeight.Bold) },
                 colors = FarmUi.topAppBarColors()
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
+            ExtendedFloatingActionButton(
                 onClick = onAddRecord,
-                containerColor = FarmUi.green,
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("Add Event") },
+                containerColor = FarmUi.orange,
                 contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Breeding Record")
-            }
+            )
         }
     ) { innerPadding ->
         Surface(
@@ -73,14 +76,13 @@ fun BreedingScreen(
             color = FarmUi.background
         ) {
             if (records.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No breeding records found. Tap + to create one.", color = FarmUi.textMuted)
-                }
+                FarmEmptyState(
+                    icon = Icons.Default.Favorite,
+                    title = "No breeding records yet",
+                    message = "Log heat, insemination, pregnancy checks and births to track expected due dates.",
+                    actionLabel = "Add Record",
+                    onAction = onAddRecord
+                )
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
@@ -102,13 +104,18 @@ fun BreedingScreen(
                                         text = record.eventType.name,
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.titleMedium,
-                                        color = FarmUi.deepGreen
+                                        color = FarmUi.deepGreen,
+                                        modifier = Modifier.weight(1f)
                                     )
                                     val dateStr = SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(record.eventDateMillis))
                                     Text(
                                         text = dateStr,
                                         style = MaterialTheme.typography.bodySmall,
                                         color = FarmUi.textMuted
+                                    )
+                                    FarmDeleteButton(
+                                        description = "${record.eventType.name} record",
+                                        onDelete = { onDeleteRecord(record.id) }
                                     )
                                 }
 

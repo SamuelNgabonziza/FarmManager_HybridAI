@@ -2,25 +2,36 @@ package com.samuel.farmos.ui.viewmodel
 
 import android.app.Application
 import android.net.Uri
+import android.util.Base64
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.samuel.farmos.BuildConfig
 import com.samuel.farmos.data.AiChatRepository
+import com.samuel.farmos.data.AnthropicFarmAiService
 import com.samuel.farmos.data.FarmAiContextRepository
+import com.samuel.farmos.data.FarmAiEmptyAnswerException
+import com.samuel.farmos.data.FarmAiImage
+import com.samuel.farmos.data.FarmAiService
 import com.samuel.farmos.data.FarmRepository
 import com.samuel.farmos.data.Recurrence
 import com.samuel.farmos.data.SavedAiChat
 import com.samuel.farmos.data.SavedAiMessage
 import com.samuel.farmos.data.Task
 import com.samuel.farmos.data.TaskCategory
+import com.samuel.farmos.data.toUserMessage
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 sealed interface AiUiState {
     object Idle : AiUiState
@@ -54,6 +65,19 @@ class FarmAiViewModel(application: Application) : AndroidViewModel(application) 
     private val farmRepository = FarmRepository(db)
     private val chatRepository = AiChatRepository(db)
     private val farmAiContextRepository = FarmAiContextRepository(db)
+
+    /**
+     * The model call. The key and base URL come from the build, not from the
+     * source tree, so a published build points at a proxy that holds the key
+     * server-side.
+     */
+    private val aiService: FarmAiService = AnthropicFarmAiService(
+        apiKey = BuildConfig.ANTHROPIC_API_KEY,
+        baseUrl = BuildConfig.ANTHROPIC_BASE_URL,
+        authTokenProvider = {
+            FirebaseAuth.getInstance().currentUser?.getIdToken(false)?.await()?.token
+        }
+    )
 
     private var userId: String? = FirebaseAuth.getInstance().currentUser?.uid
     private var farmId: String? = null
@@ -176,31 +200,111 @@ class FarmAiViewModel(application: Application) : AndroidViewModel(application) 
         _isLoading.value = true
         _uiState.value = AiUiState.Loading
 
+        // A new question replaces the previous one.
+        requestJob?.cancel()
+
         requestJob = viewModelScope.launch {
             try {
                 persistMessage(isUser = true, text = promptText, attachment = attachment)
 
-                val farmContext = farmAiContextRepository.loadContext(uid, fid)
-                val fullPrompt = "FARM DATA CONTEXT:\n$farmContext\n\nUSER QUESTION:\n$promptText"
+                // The farm's records are the assistant's context. If they
+                // cannot be read the question is still answered, but the
+                // farmer is told the answer is not based on the records.
+                var contextFailed = false
+                val farmContext = farmAiContextRepository.loadContextOrEmpty(uid, fid) {
+                    contextFailed = true
+                }
 
-                val aiReply = "Thank you for asking about your farm. Based on your farm data: $promptText"
-                _aiResponse.value = aiReply
+                val image = attachment?.takeIf { it.mimeType.startsWith("image/") }?.let { loadImage(it) }
+                val documentText = attachment?.takeIf { it.mimeType == "text/plain" }?.let { loadTextDocument(it) }
+                val promptForModel = if (documentText.isNullOrBlank()) promptText else
+                    "$promptText\n\nAttached text document (${attachment?.displayName}):\n${documentText}"
 
-                val aiMessage = AiChatMessage(
-                    id = nextMessageId++,
+                // The reply is shown as it arrives, so the assistant bubble
+                // is added up front and filled in as the text streams in.
+                val replyId = nextMessageId++
+                val reply = StringBuilder()
+                _messages.value = _messages.value + AiChatMessage(
+                    id = replyId,
                     isUser = false,
-                    text = aiReply
+                    text = ""
                 )
-                _messages.value = _messages.value + aiMessage
-                _uiState.value = AiUiState.Success(aiReply)
 
-                persistMessage(isUser = false, text = aiReply, attachment = null)
+                aiService.streamAnswer(farmContext, promptForModel, image).collect { chunk ->
+                    reply.append(chunk)
+                    _messages.value = _messages.value.map { message ->
+                        if (message.id == replyId) {
+                            message.copy(text = reply.toString())
+                        } else {
+                            message
+                        }
+                    }
+                }
+
+                val answer = reply.toString().trim()
+                if (answer.isEmpty()) {
+                    throw FarmAiEmptyAnswerException()
+                }
+
+                _aiResponse.value = answer
+                _uiState.value = AiUiState.Success(answer)
+
+                persistMessage(isUser = false, text = answer, attachment = null)
+
+                if (contextFailed) {
+                    _actionError.value = "Farm records could not be loaded, so the answer may not match your data."
+                }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 Log.e("FarmAiViewModel", "AI Request failed", e)
-                _uiState.value = AiUiState.Error("AI Error: ${e.localizedMessage}")
+                val message = e.toUserMessage()
+                _uiState.value = AiUiState.Error(message)
+                _actionError.value = message
             } finally {
                 _isLoading.value = false
             }
+        }
+    }
+
+    /**
+     * Reads an attached photo and encodes it for the API.
+     *
+     * Photos are downscaled first: a full-resolution camera shot is several
+     * megabytes, and the API rejects oversized images.
+     */
+    private suspend fun loadImage(attachment: AiAttachment): FarmAiImage? {
+        return withContext(Dispatchers.IO) {
+            if (!attachment.mimeType.startsWith("image/")) return@withContext null
+            try {
+                val resolver = getApplication<Application>().contentResolver
+                val bytes = resolver.openInputStream(attachment.uri)?.use { it.readBytes() }
+                    ?: return@withContext null
+
+                val mediaType = attachment.mimeType
+                    ?.takeIf { it.startsWith("image/") }
+                    ?: "image/jpeg"
+
+                FarmAiImage(
+                    mediaType = mediaType,
+                    base64Data = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                )
+            } catch (e: Exception) {
+                Log.e("FarmAiViewModel", "Failed to read attachment", e)
+                null
+            }
+        }
+    }
+
+    private suspend fun loadTextDocument(attachment: AiAttachment): String? = withContext(Dispatchers.IO) {
+        if (attachment.mimeType != "text/plain") return@withContext null
+        try {
+            getApplication<Application>().contentResolver.openInputStream(attachment.uri)
+                ?.bufferedReader(Charsets.UTF_8)
+                ?.use { it.readText().take(12_000) }
+        } catch (e: Exception) {
+            Log.e("FarmAiViewModel", "Failed to read attached text file", e)
+            null
         }
     }
 

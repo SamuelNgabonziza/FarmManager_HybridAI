@@ -16,12 +16,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import com.samuel.farmos.ui.components.FarmDeleteButton
+import com.samuel.farmos.ui.components.FarmEmptyState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -37,16 +41,22 @@ import com.samuel.farmos.data.FinanceType
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FinanceScreen(
     records: List<FinanceRecord>,
     onAddRecord: () -> Unit,
+    onDeleteRecord: (String) -> Unit,
     onBack: () -> Unit
 ) {
-    val totalIncome = records.filter { it.type == FinanceType.INCOME }.sumOf { it.amountUgx }
-    val totalExpense = records.filter { it.type == FinanceType.EXPENSE }.sumOf { it.amountUgx }
+    val monthStart = Calendar.getInstance().apply {
+        set(Calendar.DAY_OF_MONTH, 1); set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+    }.timeInMillis
+    val currentMonth = records.filter { it.dateMillis >= monthStart }
+    val totalIncome = currentMonth.filter { it.type == FinanceType.INCOME }.sumOf { it.amountUgx }
+    val totalExpense = currentMonth.filter { it.type == FinanceType.EXPENSE }.sumOf { it.amountUgx }
     val netBalance = totalIncome - totalExpense
 
     Scaffold(
@@ -62,13 +72,13 @@ fun FinanceScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
+            ExtendedFloatingActionButton(
                 onClick = onAddRecord,
-                containerColor = FarmUi.green,
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("Add Record") },
+                containerColor = FarmUi.teal,
                 contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Transaction")
-            }
+            )
         }
     ) { innerPadding ->
         Surface(
@@ -87,12 +97,12 @@ fun FinanceScreen(
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Text(
-                            text = "Net Balance",
+                            text = "This Month",
                             style = MaterialTheme.typography.labelMedium,
                             color = FarmUi.textMuted
                         )
                         Text(
-                            text = "UGX $netBalance",
+                            text = "Net Profit  UGX $netBalance",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = if (netBalance >= 0) FarmUi.deepGreen else MaterialTheme.colorScheme.error
@@ -105,7 +115,7 @@ fun FinanceScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
-                                Text("Income", style = MaterialTheme.typography.labelSmall, color = FarmUi.textMuted)
+                                Text("Revenue", style = MaterialTheme.typography.labelSmall, color = FarmUi.textMuted)
                                 Text("UGX $totalIncome", fontWeight = FontWeight.Bold, color = FarmUi.green)
                             }
                             Column {
@@ -117,14 +127,13 @@ fun FinanceScreen(
                 }
 
                 if (records.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(32.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("No financial records yet. Tap + to record income/expense.", color = FarmUi.textMuted)
-                    }
+                    FarmEmptyState(
+                        icon = Icons.Default.TrendingUp,
+                        title = "No transactions yet",
+                        message = "Record income and expenses to see a running net balance for the farm.",
+                        actionLabel = "Add Transaction",
+                        onAction = onAddRecord
+                    )
                 } else {
                     LazyColumn(
                         contentPadding = PaddingValues(16.dp),
@@ -146,7 +155,8 @@ fun FinanceScreen(
                                             text = record.category.name,
                                             fontWeight = FontWeight.Bold,
                                             style = MaterialTheme.typography.titleMedium,
-                                            color = FarmUi.ink
+                                            color = FarmUi.ink,
+                                            modifier = Modifier.weight(1f)
                                         )
                                         val isIncome = record.type == FinanceType.INCOME
                                         val prefix = if (isIncome) "+ " else "- "
@@ -155,6 +165,10 @@ fun FinanceScreen(
                                             fontWeight = FontWeight.Bold,
                                             style = MaterialTheme.typography.titleMedium,
                                             color = if (isIncome) FarmUi.green else MaterialTheme.colorScheme.error
+                                        )
+                                        FarmDeleteButton(
+                                            description = record.category.name,
+                                            onDelete = { onDeleteRecord(record.id) }
                                         )
                                     }
 

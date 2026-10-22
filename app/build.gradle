@@ -5,9 +5,21 @@ plugins {
     id 'com.google.gms.google-services'
 }
 
+// The Anthropic API key and base URL are supplied at build time rather than
+// being written into the source tree. A key baked into the APK can be
+// extracted by anyone who downloads it, so a production build should point
+// ANTHROPIC_BASE_URL at a proxy (a Firebase Cloud Function, for example)
+// that holds the key server-side and leave the key itself empty.
+def anthropicApiKey = project.findProperty("farmos.anthropicApiKey")
+        ?: System.getenv("ANTHROPIC_API_KEY")
+        ?: ""
+def anthropicBaseUrl = project.findProperty("farmos.anthropicBaseUrl")
+        ?: System.getenv("ANTHROPIC_BASE_URL")
+        ?: ""
+
 android {
     namespace "com.samuel.farmos"
-    compileSdk 34
+    compileSdk 35
 
     defaultConfig {
         applicationId 'com.samuel.farmos'
@@ -17,6 +29,8 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField "String", "ANTHROPIC_API_KEY", "\"${anthropicApiKey}\""
+        buildConfigField "String", "ANTHROPIC_BASE_URL", "\"${anthropicBaseUrl}\""
         buildConfigField "String", "GOOGLE_WEB_CLIENT_ID", "\"385857701045-u45j8pc5d1boc7iekn5n9allq2oqughg.apps.googleusercontent.com\""
     }
 
@@ -30,11 +44,31 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+        // The Anthropic SDK uses java.time (Duration, Clock, OffsetDateTime),
+        // which only exists from API 26. The app supports API 24, so the
+        // library is desugared down to the older platform.
+        coreLibraryDesugaringEnabled true
     }
 
     buildFeatures {
         compose true
         buildConfig true
+    }
+
+    packaging {
+        resources {
+            // Several jars pulled in transitively (httpclient5, httpcore5, ...)
+            // each ship a META-INF/DEPENDENCIES file, which makes the resource
+            // merger fail with "N files found with path 'META-INF/DEPENDENCIES'".
+            // That file is only build metadata, so dropping it is safe.
+            excludes += [
+                    "META-INF/DEPENDENCIES",
+                    "META-INF/LICENSE",
+                    "META-INF/LICENSE.txt",
+                    "META-INF/NOTICE",
+                    "META-INF/NOTICE.txt"
+            ]
+        }
     }
 
     lint {
@@ -51,6 +85,9 @@ kotlin {
 dependencies {
     // AndroidX Core & Lifecycle
     implementation 'androidx.core:core-ktx:1.13.1'
+    // The platform splash screen API (Android 12+ shows a system splash automatically;
+    // this backports it to older releases so launch looks the same on every device).
+    implementation 'androidx.core:core-splashscreen:1.2.0'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.8.6'
     implementation 'androidx.lifecycle:lifecycle-runtime-compose:2.8.6'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.8.6'
@@ -67,6 +104,9 @@ dependencies {
     implementation 'androidx.compose.ui:ui-graphics'
     implementation 'androidx.compose.ui:ui-tooling-preview'
     implementation 'androidx.compose.material3:material3'
+    // The full Material icon set. `material-icons-core` only ships a handful of
+    // icons, and the screens here use the standard ones (Pets, Visibility, ...).
+    implementation 'androidx.compose.material:material-icons-extended'
     debugImplementation 'androidx.compose.ui:ui-tooling'
 
     // Navigation Compose
@@ -94,4 +134,11 @@ dependencies {
     // Coroutines & Guava
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1'
     implementation 'com.google.guava:guava:33.2.1-android'
+
+    // The Anthropic SDK powers the AI Farm Assistant.
+    implementation 'com.anthropic:anthropic-java:2.34.0'
+
+    // Rewrites java.time (and the rest of the java.* APIs that arrived after
+    // API 21) so they work on the older Android versions this app supports.
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 }

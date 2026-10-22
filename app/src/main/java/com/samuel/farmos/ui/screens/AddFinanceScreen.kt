@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,6 +30,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -38,10 +40,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.samuel.farmos.data.FinanceCategory
 import com.samuel.farmos.data.FinanceRecord
 import com.samuel.farmos.data.FinanceType
+import com.samuel.farmos.ui.components.FarmDatePickerField
+import com.samuel.farmos.ui.theme.FarmOsTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,6 +59,11 @@ fun AddFinanceScreen(
     var amountText by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var categoryExpanded by remember { mutableStateOf(false) }
+    var dateMillis by remember { mutableStateOf(System.currentTimeMillis()) }
+    fun save() {
+        val amount = amountText.toDoubleOrNull() ?: 0.0
+        if (amount > 0) onSave(FinanceRecord(type = type, category = category, amountUgx = amount, description = description.trim(), dateMillis = dateMillis))
+    }
 
     Scaffold(
         topBar = {
@@ -64,6 +74,7 @@ fun AddFinanceScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = { TextButton(onClick = ::save, enabled = (amountText.toDoubleOrNull() ?: 0.0) > 0.0) { Text("Save", fontWeight = FontWeight.Bold) } },
                 colors = FarmUi.topAppBarColors()
             )
         }
@@ -78,16 +89,17 @@ fun AddFinanceScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
+                    .padding(16.dp)
+                    .imePadding(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Row(
@@ -151,6 +163,9 @@ fun AddFinanceScreen(
                             colors = FarmUi.textFieldColors()
                         )
 
+                        Text("Date", color = FarmUi.green, fontWeight = FontWeight.SemiBold)
+                        FarmDatePickerField(label = "", initialMillis = dateMillis, onDateSelected = { dateMillis = it })
+
                         OutlinedTextField(
                             value = description,
                             onValueChange = { description = it },
@@ -160,32 +175,20 @@ fun AddFinanceScreen(
                             colors = FarmUi.textFieldColors()
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Button(
-                            onClick = {
-                                val amount = amountText.toDoubleOrNull() ?: 0.0
-                                if (amount > 0) {
-                                    val record = FinanceRecord(
-                                        type = type,
-                                        category = category,
-                                        amountUgx = amount,
-                                        description = description.trim(),
-                                        dateMillis = System.currentTimeMillis()
-                                    )
-                                    onSave(record)
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = amountText.toDoubleOrNull() != null && amountText.toDoubleOrNull()!! > 0,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = FarmUi.buttonColors()
-                        ) {
-                            Text("Save Transaction")
-                        }
                     }
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AddFinanceScreenPreview() {
+    FarmOsTheme {
+        AddFinanceScreen(
+            onSave = {},
+            onBack = {}
+        )
     }
 }

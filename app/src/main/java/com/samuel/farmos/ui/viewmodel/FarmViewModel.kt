@@ -63,7 +63,7 @@ class FarmViewModel(
     val farms: StateFlow<List<Farm>> = _farms.asStateFlow()
 
     /** The farm the app is currently focused on. */
-    val activeFarmId: StateFlow<String?> = sessionManager.activeFarmId.asStateFlow()
+    val activeFarmId: StateFlow<String?> = sessionManager.activeFarmId
 
     /** Display name of the active farm, or null when no farm is selected yet. */
     val currentFarmName: StateFlow<String?> = combine(_farms, activeFarmId) { list, id ->
@@ -122,7 +122,7 @@ class FarmViewModel(
 
     // --- Auth / farms ------------------------------------------------------
 
-    private val authListener = FirebaseAuth.OnAuthStateChangedListener { firebaseAuth ->
+    private val authListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
         val newUid = firebaseAuth.currentUser?.uid
         _uid.value = newUid
         if (newUid == null) {
@@ -264,11 +264,25 @@ class FarmViewModel(
             .onFailure { _errorMessage.value = "Could not save production record: ${it.message}" }
     }
 
+    suspend fun deleteProduction(recordId: String) {
+        val uid = currentUid() ?: return
+        val farm = activeFarm() ?: return
+        runCatching { repository.deleteProductionRecord(uid, farm.id, recordId) }
+            .onFailure { _errorMessage.value = "Could not delete production record: ${it.message}" }
+    }
+
     suspend fun saveBreeding(record: BreedingRecord) {
         val uid = currentUid() ?: return
         val farm = activeFarm() ?: return
         runCatching { repository.addBreedingRecord(uid, farm.id, record) }
             .onFailure { _errorMessage.value = "Could not save breeding record: ${it.message}" }
+    }
+
+    suspend fun deleteBreeding(recordId: String) {
+        val uid = currentUid() ?: return
+        val farm = activeFarm() ?: return
+        runCatching { repository.deleteBreedingRecord(uid, farm.id, recordId) }
+            .onFailure { _errorMessage.value = "Could not delete breeding record: ${it.message}" }
     }
 
     suspend fun saveFeeding(record: FeedingRecord) {
@@ -278,11 +292,25 @@ class FarmViewModel(
             .onFailure { _errorMessage.value = "Could not save feeding record: ${it.message}" }
     }
 
+    suspend fun deleteFeeding(recordId: String) {
+        val uid = currentUid() ?: return
+        val farm = activeFarm() ?: return
+        runCatching { repository.deleteFeedingRecord(uid, farm.id, recordId) }
+            .onFailure { _errorMessage.value = "Could not delete feeding record: ${it.message}" }
+    }
+
     suspend fun saveFinance(record: FinanceRecord) {
         val uid = currentUid() ?: return
         val farm = activeFarm() ?: return
         runCatching { repository.addFinanceRecord(uid, farm.id, record) }
             .onFailure { _errorMessage.value = "Could not save transaction: ${it.message}" }
+    }
+
+    suspend fun deleteFinance(recordId: String) {
+        val uid = currentUid() ?: return
+        val farm = activeFarm() ?: return
+        runCatching { repository.deleteFinanceRecord(uid, farm.id, recordId) }
+            .onFailure { _errorMessage.value = "Could not delete transaction: ${it.message}" }
     }
 
     suspend fun saveHealthCase(healthCase: HealthCase) {
@@ -299,6 +327,13 @@ class FarmViewModel(
         runCatching {
             repository.updateHealthCase(uid, farm.id, healthCase.copy(status = status))
         }.onFailure { _errorMessage.value = "Could not update health case: ${it.message}" }
+    }
+
+    suspend fun deleteHealthCase(caseId: String) {
+        val uid = currentUid() ?: return
+        val farm = activeFarm() ?: return
+        runCatching { repository.deleteHealthCase(uid, farm.id, caseId) }
+            .onFailure { _errorMessage.value = "Could not delete health case: ${it.message}" }
     }
 
     fun signOut() {

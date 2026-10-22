@@ -1,6 +1,6 @@
 package com.samuel.farmos.data
 
-enum class Appetite { POOR, NORMAL, VORACIOUS }
+enum class Appetite { POOR, NORMAL, VORACIOUS, NONE }
 enum class WaterIntake { REDUCED, NORMAL, INCREASED }
 
 data class FeedSuggestions(val suggestions: List<String> = emptyList())

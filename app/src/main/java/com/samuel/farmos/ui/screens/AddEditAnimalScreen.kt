@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -35,16 +38,20 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.samuel.farmos.data.Animal
 import com.samuel.farmos.data.AnimalStatus
 import com.samuel.farmos.data.BreedSuggestions
 import com.samuel.farmos.data.Gender
 import com.samuel.farmos.data.Species
+import com.samuel.farmos.ui.components.FarmDatePickerField
+import com.samuel.farmos.ui.theme.FarmOsTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,13 +61,15 @@ fun AddEditAnimalScreen(
     onDelete: (() -> Unit)? = null,
     onBack: () -> Unit
 ) {
-    var tagNumber by remember { mutableStateOf(animal?.tagNumber ?: "") }
-    var name by remember { mutableStateOf(animal?.name ?: "") }
-    var species by remember { mutableStateOf(animal?.species ?: Species.COW) }
-    var breed by remember { mutableStateOf(animal?.breed ?: "") }
-    var gender by remember { mutableStateOf(animal?.gender ?: Gender.FEMALE) }
-    var status by remember { mutableStateOf(animal?.status ?: AnimalStatus.HEALTHY) }
-    var weightKgText by remember { mutableStateOf(animal?.weightKg?.toString() ?: "") }
+    var tagNumber by rememberSaveable(animal?.id) { mutableStateOf(animal?.tagNumber ?: "") }
+    var name by rememberSaveable(animal?.id) { mutableStateOf(animal?.name ?: "") }
+    var species by rememberSaveable(animal?.id) { mutableStateOf(animal?.species ?: Species.COW) }
+    var breed by rememberSaveable(animal?.id) { mutableStateOf(animal?.breed ?: "") }
+    var gender by rememberSaveable(animal?.id) { mutableStateOf(animal?.gender ?: Gender.FEMALE) }
+    var status by rememberSaveable(animal?.id) { mutableStateOf(animal?.status ?: AnimalStatus.HEALTHY) }
+    var weightKgText by rememberSaveable(animal?.id) { mutableStateOf(animal?.weightKg?.toString() ?: "") }
+    var isCastrated by rememberSaveable(animal?.id) { mutableStateOf(animal?.isCastrated) }
+    var birthDate by rememberSaveable(animal?.id) { mutableStateOf(animal?.birthDate) }
 
     // The animal arrives asynchronously from Firestore, so the form is populated
     // once the document for this id shows up. Re-runs only when the id changes,
@@ -74,20 +83,28 @@ fun AddEditAnimalScreen(
             gender = it.gender
             status = it.status
             weightKgText = it.weightKg?.toString() ?: ""
+            isCastrated = it.isCastrated
+            birthDate = it.birthDate
         }
     }
 
-    var speciesExpanded by remember { mutableStateOf(false) }
     var breedExpanded by remember { mutableStateOf(false) }
-    var genderExpanded by remember { mutableStateOf(false) }
     var statusExpanded by remember { mutableStateOf(false) }
 
     var tagNumberError by remember { mutableStateOf(false) }
     var weightError by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showSaveConfirm by remember { mutableStateOf(false) }
 
     val weightValue = weightKgText.toDoubleOrNull()
     val isWeightValid = weightKgText.isBlank() || (weightValue != null && weightValue > 0.0)
+    fun saveAnimal() {
+        onSave((animal ?: Animal()).copy(
+            tagNumber = tagNumber.trim(), name = name.trim(), species = species, breed = breed.trim(),
+            gender = gender, isCastrated = if (gender == Gender.MALE) isCastrated else null,
+            birthDate = birthDate, status = status, weightKg = weightValue
+        ))
+    }
 
     Scaffold(
         topBar = {
@@ -97,6 +114,15 @@ fun AddEditAnimalScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
+                },
+                actions = {
+                    TextButton(onClick = {
+                        val trimmedTag = tagNumber.trim()
+                        tagNumberError = trimmedTag.isEmpty()
+                        weightError = !isWeightValid
+                        if (tagNumberError || weightError) return@TextButton
+                        showSaveConfirm = true
+                    }) { Text("Save", fontWeight = FontWeight.Bold) }
                 },
                 colors = FarmUi.topAppBarColors()
             )
@@ -112,25 +138,37 @@ fun AddEditAnimalScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
+                    .padding(16.dp)
+                    .imePadding(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(8.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        Text("Species", fontWeight = FontWeight.SemiBold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            listOf(Species.COW, Species.GOAT, Species.SHEEP).forEach { option ->
+                                FilterChip(
+                                    selected = species == option,
+                                    onClick = { species = option; breed = "" },
+                                    label = { Text(when (option) { Species.COW -> "🐄 Cow"; Species.GOAT -> "🐐 Goat"; else -> "🐑 Sheep" }) }
+                                )
+                            }
+                        }
+
                         OutlinedTextField(
                             value = tagNumber,
                             onValueChange = {
                                 tagNumber = it
                                 if (it.isNotBlank()) tagNumberError = false
                             },
-                            label = { Text("Tag Number *") },
+                            label = { Text("Tag / ID Number *") },
                             isError = tagNumberError,
                             supportingText = if (tagNumberError) {
                                 { Text("Tag number is required") }
@@ -150,39 +188,6 @@ fun AddEditAnimalScreen(
                             shape = FarmUi.fieldShape,
                             colors = FarmUi.textFieldColors()
                         )
-
-                        ExposedDropdownMenuBox(
-                            expanded = speciesExpanded,
-                            onExpandedChange = { speciesExpanded = !speciesExpanded }
-                        ) {
-                            OutlinedTextField(
-                                value = species.name,
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text("Species") },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = speciesExpanded) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor(),
-                                shape = FarmUi.fieldShape,
-                                colors = FarmUi.textFieldColors()
-                            )
-                            ExposedDropdownMenu(
-                                expanded = speciesExpanded,
-                                onDismissRequest = { speciesExpanded = false }
-                            ) {
-                                Species.values().forEach { s ->
-                                    DropdownMenuItem(
-                                        text = { Text(s.name) },
-                                        onClick = {
-                                            species = s
-                                            breed = ""
-                                            speciesExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
 
                         val breedOptions = BreedSuggestions.forSpecies(species)
                         if (breedOptions.isNotEmpty()) {
@@ -228,44 +233,42 @@ fun AddEditAnimalScreen(
                             )
                         }
 
-                        ExposedDropdownMenuBox(
-                            expanded = genderExpanded,
-                            onExpandedChange = { genderExpanded = !genderExpanded }
-                        ) {
-                            OutlinedTextField(
-                                value = gender.name,
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text("Gender") },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = genderExpanded) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor(),
-                                shape = FarmUi.fieldShape,
-                                colors = FarmUi.textFieldColors()
-                            )
-                            ExposedDropdownMenu(
-                                expanded = genderExpanded,
-                                onDismissRequest = { genderExpanded = false }
-                            ) {
-                                Gender.values().forEach { g ->
-                                    DropdownMenuItem(
-                                        text = { Text(g.name) },
-                                        onClick = {
-                                            gender = g
-                                            genderExpanded = false
-                                        }
+                        Text("Gender", fontWeight = FontWeight.SemiBold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Gender.values().forEach { option ->
+                                FilterChip(
+                                    selected = gender == option,
+                                    onClick = { gender = option; if (option == Gender.FEMALE) isCastrated = null },
+                                    label = { Text(option.name.lowercase().replaceFirstChar { it.uppercase() }) }
+                                )
+                            }
+                        }
+
+                        if (gender == Gender.MALE) {
+                            Text("Castrated", fontWeight = FontWeight.SemiBold)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                listOf(false to "No", true to "Yes").forEach { (value, label) ->
+                                    FilterChip(
+                                        selected = isCastrated == value,
+                                        onClick = { isCastrated = value },
+                                        label = { Text(label) }
                                     )
                                 }
                             }
                         }
+
+                        FarmDatePickerField(
+                            label = "Birth Date",
+                            initialMillis = birthDate,
+                            onDateSelected = { birthDate = it }
+                        )
 
                         ExposedDropdownMenuBox(
                             expanded = statusExpanded,
                             onExpandedChange = { statusExpanded = !statusExpanded }
                         ) {
                             OutlinedTextField(
-                                value = status.name,
+                                value = status.name.lowercase().replaceFirstChar { it.uppercase() },
                                 onValueChange = {},
                                 readOnly = true,
                                 label = { Text("Health Status") },
@@ -282,7 +285,7 @@ fun AddEditAnimalScreen(
                             ) {
                                 AnimalStatus.values().forEach { st ->
                                     DropdownMenuItem(
-                                        text = { Text(st.name) },
+                                        text = { Text(st.name.lowercase().replaceFirstChar { it.uppercase() }) },
                                         onClick = {
                                             status = st
                                             statusExpanded = false
@@ -312,31 +315,6 @@ fun AddEditAnimalScreen(
 
                         Spacer(modifier = Modifier.height(12.dp))
 
-                        Button(
-                            onClick = {
-                                val trimmedTag = tagNumber.trim()
-                                tagNumberError = trimmedTag.isEmpty()
-                                weightError = !isWeightValid
-                                if (tagNumberError || weightError) return@Button
-
-                                val updated = (animal ?: Animal()).copy(
-                                    tagNumber = trimmedTag,
-                                    name = name.trim(),
-                                    species = species,
-                                    breed = breed.trim(),
-                                    gender = gender,
-                                    status = status,
-                                    weightKg = weightValue
-                                )
-                                onSave(updated)
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = FarmUi.buttonColors()
-                        ) {
-                            Text("Save Animal")
-                        }
-
                         if (onDelete != null) {
                             Button(
                                 onClick = { showDeleteConfirm = true },
@@ -351,6 +329,21 @@ fun AddEditAnimalScreen(
                 }
             }
         }
+    }
+
+    if (showSaveConfirm) {
+        AlertDialog(
+            onDismissRequest = { showSaveConfirm = false },
+            title = { Text("Save Animal?") },
+            text = { Text("Are you sure you want to save this animal with Tag #${tagNumber.trim()}?") },
+            confirmButton = {
+                TextButton(onClick = { showSaveConfirm = false; saveAnimal() }) {
+                    Text("Yes, Save", color = FarmUi.green, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = { TextButton(onClick = { showSaveConfirm = false }) { Text("Cancel") } },
+            containerColor = MaterialTheme.colorScheme.surface
+        )
     }
 
     if (showDeleteConfirm && onDelete != null) {

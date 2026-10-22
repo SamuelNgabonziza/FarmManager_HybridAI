@@ -1,6 +1,6 @@
 package com.samuel.farmos.data
 
-enum class ProductionType { MILK, EGGS, MEAT, WOOL, HONEY, OTHER }
+enum class ProductionType { MILK, WEIGHT, EGGS, MEAT, WOOL, HONEY, OTHER }
 
 data class ProductionRecord(
     val id: String = "",

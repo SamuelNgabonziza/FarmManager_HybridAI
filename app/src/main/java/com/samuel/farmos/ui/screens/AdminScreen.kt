@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,12 +27,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.samuel.farmos.ui.theme.FarmOsTheme
 
 @Composable
 fun AdminScreen(
     correctPin: String?,
-    onSetPin: (String) -> Unit
+    onSetPin: (String) -> Unit,
+    onOpenFinance: () -> Unit = {}
 ) {
     var enteredPin by remember { mutableStateOf("") }
     var unlocked by remember { mutableStateOf(correctPin.isNullOrBlank()) }
@@ -49,7 +53,8 @@ fun AdminScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp),
+                .padding(24.dp)
+                .imePadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -177,7 +182,22 @@ fun AdminScreen(
                     style = MaterialTheme.typography.bodyLarge,
                     color = FarmUi.textMuted
                 )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(onClick = onOpenFinance, modifier = Modifier.fillMaxWidth(), colors = FarmUi.buttonColors()) {
+                    Text("Open Finance Records")
+                }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AdminScreenPreview() {
+    FarmOsTheme {
+        AdminScreen(
+            correctPin = "1234",
+            onSetPin = {}
+        )
     }
 }

@@ -10,4 +10,16 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>
+
+    <!--
+        The launch theme. `Theme.SplashScreen` comes from androidx.core:core-splashscreen
+        and backports the Android 12+ system splash screen to older releases, so the
+        launch experience is identical on every device. `postSplashScreenTheme` hands
+        over to the real app theme once the Activity has drawn its first frame.
+    -->
+    <style name="Theme.FarmOs.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/farm_launch_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_farm_wheat</item>
+        <item name="postSplashScreenTheme">@style/Theme.FarmOs</item>
+    </style>
 </resources>

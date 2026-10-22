@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,9 +27,12 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.samuel.farmos.data.HealthCase
 import com.samuel.farmos.data.HealthCaseStatus
+import com.samuel.farmos.ui.components.FarmDeleteButton
+import com.samuel.farmos.ui.theme.FarmOsTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -38,6 +42,7 @@ import java.util.Locale
 fun HealthCaseDetailScreen(
     healthCase: HealthCase?,
     onUpdateStatus: (HealthCaseStatus) -> Unit,
+    onDelete: (() -> Unit)? = null,
     onBack: () -> Unit
 ) {
     Scaffold(
@@ -47,6 +52,14 @@ fun HealthCaseDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                actions = {
+                    if (healthCase != null && onDelete != null) {
+                        FarmDeleteButton(
+                            description = "this health case",
+                            onDelete = onDelete
+                        )
                     }
                 },
                 colors = FarmUi.topAppBarColors()
@@ -70,7 +83,8 @@ fun HealthCaseDetailScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(16.dp),
+                        .padding(16.dp)
+                        .imePadding(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Card(
@@ -134,5 +148,25 @@ fun HealthCaseDetailScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HealthCaseDetailScreenPreview() {
+    FarmOsTheme {
+        HealthCaseDetailScreen(
+            healthCase = HealthCase(
+                id = "1",
+                linkedAnimalId = "101",
+                mainComplaint = "Loss of appetite and lethargy",
+                notes = "Administered antibiotic injection",
+                status = HealthCaseStatus.ACTIVE,
+                createdDateMillis = System.currentTimeMillis()
+            ),
+            onUpdateStatus = {},
+            onDelete = {},
+            onBack = {}
+        )
     }
 }

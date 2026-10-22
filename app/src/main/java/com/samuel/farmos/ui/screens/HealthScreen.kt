@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,12 +29,18 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.samuel.farmos.data.HealthCase
+import com.samuel.farmos.data.HealthCaseStatus
+import com.samuel.farmos.ui.components.FarmEmptyState
+import com.samuel.farmos.ui.theme.FarmOsTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -49,7 +56,12 @@ fun HealthScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Health Cases (${cases.size})", fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text("Animal Health", fontWeight = FontWeight.Bold)
+                        Text("Cases & vaccines", style = MaterialTheme.typography.bodySmall, color = FarmUi.textMuted)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
@@ -59,13 +71,13 @@ fun HealthScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
+            ExtendedFloatingActionButton(
                 onClick = onAddCase,
-                containerColor = FarmUi.green,
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("Report Illness") },
+                containerColor = FarmUi.coral,
                 contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Health Case")
-            }
+            )
         }
     ) { innerPadding ->
         Surface(
@@ -74,25 +86,26 @@ fun HealthScreen(
                 .padding(innerPadding),
             color = FarmUi.background
         ) {
-            if (cases.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No health cases logged. Tap + to report a case.", color = FarmUi.textMuted)
+            Column(modifier = Modifier.fillMaxSize()) {
+                Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    HealthCountCard("Active", cases.count { it.status == HealthCaseStatus.ACTIVE }.toString(), FarmUi.surfaceCoral, Modifier.weight(1f))
+                    HealthCountCard("Resolved", cases.count { it.status == HealthCaseStatus.RECOVERED || it.status == HealthCaseStatus.CLOSED }.toString(), FarmUi.surfaceMint, Modifier.weight(1f))
                 }
-            } else {
+                if (cases.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("No active health cases.", color = FarmUi.textMuted)
+                    }
+                } else {
                 LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
+                    modifier = Modifier.weight(1f),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 92.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(cases) { healthCase ->
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onCaseDetail(healthCase.id) },
+                                .clickable(role = Role.Button, onClick = { onCaseDetail(healthCase.id) }),
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                         ) {
@@ -106,7 +119,8 @@ fun HealthScreen(
                                         text = healthCase.mainComplaint,
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.titleMedium,
-                                        color = FarmUi.deepGreen
+                                        color = FarmUi.deepGreen,
+                                        modifier = Modifier.weight(1f)
                                     )
                                     Text(
                                         text = healthCase.status.name,
@@ -128,6 +142,38 @@ fun HealthScreen(
                     }
                 }
             }
+            }
         }
+    }
+}
+
+@Composable
+private fun HealthCountCard(title: String, count: String, color: androidx.compose.ui.graphics.Color, modifier: Modifier) {
+    Card(modifier = modifier, shape = FarmUi.cardShape, colors = CardDefaults.cardColors(containerColor = color)) {
+        Column(Modifier.padding(14.dp)) {
+            Text(title, color = FarmUi.textMuted, style = MaterialTheme.typography.bodySmall)
+            Text(count, color = FarmUi.green, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun HealthScreenPreview() {
+    FarmOsTheme {
+        HealthScreen(
+            cases = listOf(
+                HealthCase(
+                    id = "1",
+                    linkedAnimalId = "101",
+                    mainComplaint = "Limping left hind leg",
+                    status = HealthCaseStatus.ACTIVE,
+                    createdDateMillis = System.currentTimeMillis()
+                )
+            ),
+            onAddCase = {},
+            onCaseDetail = {},
+            onBack = {}
+        )
     }
 }

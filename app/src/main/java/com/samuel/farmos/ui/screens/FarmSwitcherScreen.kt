@@ -25,6 +25,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -35,8 +36,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.samuel.farmos.data.Farm
+import com.samuel.farmos.ui.components.FarmEmptyState
+import com.samuel.farmos.ui.theme.FarmOsTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,18 +55,23 @@ fun FarmSwitcherScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Select Farm", fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text("Switch Farm", fontWeight = FontWeight.Bold)
+                        Text("Choose the farm you want to manage", style = MaterialTheme.typography.bodySmall, color = FarmUi.textMuted)
+                    }
+                },
                 colors = FarmUi.topAppBarColors()
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
+            ExtendedFloatingActionButton(
                 onClick = onAddFarm,
+                icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                text = { Text("Add Farm") },
                 containerColor = FarmUi.green,
                 contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Add Farm")
-            }
+            )
         }
     ) { innerPadding ->
         Surface(
@@ -78,26 +88,13 @@ fun FarmSwitcherScreen(
                     CircularProgressIndicator(color = FarmUi.green)
                 }
             } else if (farms.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "No farms found",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = FarmUi.textMuted
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Tap + to create your first farm",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = FarmUi.textMuted
-                        )
-                    }
-                }
+                FarmEmptyState(
+                    icon = Icons.Default.Home,
+                    title = "No farms yet",
+                    message = "Create a farm to start recording animals, tasks, production and finances.",
+                    actionLabel = "Add Farm",
+                    onAction = onAddFarm
+                )
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
@@ -108,11 +105,12 @@ fun FarmSwitcherScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clickable { onSelectFarm(farm) },
+                                .clickable(role = Role.Button, onClick = { onSelectFarm(farm) }),
                             shape = RoundedCornerShape(16.dp),
                             colors = CardDefaults.cardColors(
                                 containerColor = if (isActive) FarmUi.surfaceMint else MaterialTheme.colorScheme.surface
-                            )
+                            ),
+                            border = if (isActive) androidx.compose.foundation.BorderStroke(1.dp, FarmUi.green) else null
                         ) {
                             Row(
                                 modifier = Modifier
@@ -133,6 +131,7 @@ fun FarmSwitcherScreen(
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.titleMedium
                                     )
+                                    if (isActive) Text("● Active Farm", style = MaterialTheme.typography.bodySmall, color = FarmUi.green)
                                 }
                                 if (isActive) {
                                     Icon(
@@ -147,5 +146,22 @@ fun FarmSwitcherScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun FarmSwitcherScreenPreview() {
+    FarmOsTheme {
+        FarmSwitcherScreen(
+            farms = listOf(
+                Farm(id = "1", farmName = "Green Valley Farm"),
+                Farm(id = "2", farmName = "Sunny Hills Ranch")
+            ),
+            activeFarmId = "1",
+            isLoading = false,
+            onSelectFarm = {},
+            onAddFarm = {}
+        )
     }
 }

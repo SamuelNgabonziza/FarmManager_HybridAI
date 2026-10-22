@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -15,6 +16,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -30,8 +33,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.samuel.farmos.ui.theme.FarmOsTheme
 
 @Composable
 fun AddFarmScreen(onFarmCreated: (String) -> Unit) {
@@ -45,21 +50,12 @@ fun AddFarmScreen(onFarmCreated: (String) -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 40.dp),
+                .padding(horizontal = 24.dp, vertical = 40.dp)
+                .imePadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .size(68.dp)
-                    .background(
-                        brush = Brush.linearGradient(listOf(FarmUi.green, FarmUi.deepGreen)),
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(text = "🏡", fontSize = 34.sp)
-            }
+            FarmLogo(68.dp)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -101,6 +97,9 @@ fun AddFarmScreen(onFarmCreated: (String) -> Unit) {
                     OutlinedTextField(
                         value = farmName,
                         onValueChange = { farmName = it },
+                        label = { Text("Farm Name") },
+                        placeholder = { Text("e.g. Green Valley Farm") },
+                        leadingIcon = { androidx.compose.material3.Icon(Icons.Default.Home, contentDescription = null, tint = FarmUi.green) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         shape = FarmUi.fieldShape,
@@ -127,5 +126,13 @@ fun AddFarmScreen(onFarmCreated: (String) -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AddFarmScreenPreview() {
+    FarmOsTheme {
+        AddFarmScreen(onFarmCreated = {})
     }
 }

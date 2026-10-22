@@ -5,4 +5,16 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+
+    <!--
+        The launch theme for dark mode. `Theme.SplashScreen` already resolves its
+        light/dark base automatically (the library flips it in values-night-v8),
+        so the parent is the same as in the light variant and only the post-splash
+        theme differs.
+    -->
+    <style name="Theme.FarmOs.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/farm_launch_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_farm_wheat</item>
+        <item name="postSplashScreenTheme">@style/Theme.FarmOs</item>
+    </style>
 </resources>

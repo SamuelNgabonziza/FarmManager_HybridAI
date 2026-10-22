@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.FarmOs" parent="@android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:windowSplashScreenBackground">#064e3b</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@android:color/transparent</item>
-    </style>
+    <!--
+        On API 31+ the system splash screen is configured by
+        androidx.core:core-splashscreen (Theme.SplashScreen), which reads the
+        windowSplashScreen* attributes itself. Nothing extra is needed here, and
+        the app theme must keep the transparent system bars so edge-to-edge
+        still works, so this file intentionally defines no Theme.FarmOs override.
+    -->
 </resources>
