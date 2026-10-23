@@ -1,25 +1,23 @@
 package com.samuel.farmos.ui.screens
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -31,11 +29,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.samuel.farmos.ui.theme.FarmOsTheme
 
 @Composable
@@ -55,14 +51,14 @@ fun AddFarmScreen(onFarmCreated: (String) -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            FarmLogo(68.dp)
+            FarmLogo(64.dp)
 
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = "Name Your Farm",
-                color = FarmUi.deepGreen,
-                fontWeight = FontWeight.ExtraBold,
+                color = FarmUi.green,
+                fontWeight = FontWeight.Bold,
                 style = MaterialTheme.typography.headlineSmall
             )
 
@@ -77,8 +73,8 @@ fun AddFarmScreen(onFarmCreated: (String) -> Unit) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(22.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
+                border = BorderStroke(1.dp, FarmUi.cardBorder)
             ) {
                 Column(
                     modifier = Modifier
@@ -87,7 +83,7 @@ fun AddFarmScreen(onFarmCreated: (String) -> Unit) {
                 ) {
                     Text(
                         text = "Farm Name",
-                        color = FarmUi.deepGreen,
+                        color = FarmUi.green,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleSmall
                     )
@@ -97,9 +93,10 @@ fun AddFarmScreen(onFarmCreated: (String) -> Unit) {
                     OutlinedTextField(
                         value = farmName,
                         onValueChange = { farmName = it },
-                        label = { Text("Farm Name") },
                         placeholder = { Text("e.g. Green Valley Farm") },
-                        leadingIcon = { androidx.compose.material3.Icon(Icons.Default.Home, contentDescription = null, tint = FarmUi.green) },
+                        leadingIcon = {
+                            Icon(Icons.Default.Home, contentDescription = null, tint = FarmUi.green)
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         shape = FarmUi.fieldShape,
@@ -116,12 +113,12 @@ fun AddFarmScreen(onFarmCreated: (String) -> Unit) {
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp),
+                            .height(50.dp),
                         enabled = farmName.isNotBlank(),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RoundedCornerShape(20.dp),
                         colors = FarmUi.buttonColors()
                     ) {
-                        Text("Create Farm")
+                        Text("Create Farm", fontWeight = FontWeight.Bold)
                     }
                 }
             }

@@ -1,5 +1,7 @@
 package com.samuel.farmos.ui.screens
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,11 +18,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,13 +32,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.samuel.farmos.data.BreedingEventType
 import com.samuel.farmos.data.BreedingRecord
 import com.samuel.farmos.ui.components.FarmDeleteButton
-import com.samuel.farmos.ui.components.FarmEmptyState
 import com.samuel.farmos.ui.theme.FarmOsTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -55,7 +55,12 @@ fun BreedingScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("All Breeding Events", fontWeight = FontWeight.Bold) },
+                title = { Text("All Breeding Events", fontWeight = FontWeight.Bold, color = FarmUi.green) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FarmUi.green)
+                    }
+                },
                 colors = FarmUi.topAppBarColors()
             )
         },
@@ -63,11 +68,13 @@ fun BreedingScreen(
             ExtendedFloatingActionButton(
                 onClick = onAddRecord,
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Add Event") },
+                text = { Text("Add Event", fontWeight = FontWeight.Bold) },
                 containerColor = FarmUi.orange,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                contentColor = if (isSystemInDarkTheme()) Color(0xFF3D2005) else Color.White,
+                shape = RoundedCornerShape(24.dp)
             )
-        }
+        },
+        containerColor = FarmUi.background
     ) { innerPadding ->
         Surface(
             modifier = Modifier
@@ -76,23 +83,20 @@ fun BreedingScreen(
             color = FarmUi.background
         ) {
             if (records.isEmpty()) {
-                FarmEmptyState(
-                    icon = Icons.Default.Favorite,
-                    title = "No breeding records yet",
-                    message = "Log heat, insemination, pregnancy checks and births to track expected due dates.",
-                    actionLabel = "Add Record",
-                    onAction = onAddRecord
-                )
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("No breeding records yet.", color = FarmUi.textMuted, style = MaterialTheme.typography.bodyLarge)
+                }
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(records) { record ->
+                    items(records, key = { it.id }) { record ->
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                            colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
+                            border = BorderStroke(1.dp, FarmUi.cardBorder)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Row(
@@ -104,14 +108,15 @@ fun BreedingScreen(
                                         text = record.eventType.name,
                                         fontWeight = FontWeight.Bold,
                                         style = MaterialTheme.typography.titleMedium,
-                                        color = FarmUi.deepGreen,
+                                        color = FarmUi.purple,
                                         modifier = Modifier.weight(1f)
                                     )
                                     val dateStr = SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(record.eventDateMillis))
                                     Text(
                                         text = dateStr,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = FarmUi.textMuted
+                                        color = FarmUi.textMuted,
+                                        modifier = Modifier.padding(end = 8.dp)
                                     )
                                     FarmDeleteButton(
                                         description = "${record.eventType.name} record",

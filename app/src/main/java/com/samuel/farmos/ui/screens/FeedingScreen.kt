@@ -1,5 +1,7 @@
 package com.samuel.farmos.ui.screens
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,11 +18,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,17 +32,18 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.samuel.farmos.data.Animal
 import com.samuel.farmos.data.FeedingRecord
 import com.samuel.farmos.ui.components.FarmDeleteButton
-import com.samuel.farmos.ui.components.FarmEmptyState
 import com.samuel.farmos.ui.theme.FarmOsTheme
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
-import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,19 +51,23 @@ fun FeedingScreen(
     records: List<FeedingRecord>,
     onAddRecord: () -> Unit,
     onDeleteRecord: (String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    animals: List<Animal> = emptyList()
 ) {
     val todayStart = Calendar.getInstance().apply {
         set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
     }.timeInMillis
     val fedToday = records.filter { it.dateMillis >= todayStart }.sumOf { it.quantityKg }
+
+    val feedingCardBg = if (isSystemInDarkTheme()) Color(0xFF255D36) else Color(0xFF26733A)
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Feeding Records", fontWeight = FontWeight.Bold) },
+                title = { Text("Feeding", fontWeight = FontWeight.Bold, color = FarmUi.green) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FarmUi.green)
                     }
                 },
                 colors = FarmUi.topAppBarColors()
@@ -72,82 +77,79 @@ fun FeedingScreen(
             ExtendedFloatingActionButton(
                 onClick = onAddRecord,
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Log Feed") },
+                text = { Text("Log Feed", fontWeight = FontWeight.Bold) },
                 containerColor = FarmUi.green,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                contentColor = if (isSystemInDarkTheme()) Color(0xFF143820) else Color.White,
+                shape = RoundedCornerShape(24.dp)
             )
-        }
-    ) { innerPadding ->
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            color = FarmUi.background
+        },
+        containerColor = FarmUi.background
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 96.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            if (records.isEmpty()) {
-                FarmEmptyState(
-                    icon = Icons.Default.Restaurant,
-                    title = "No feeding records yet",
-                    message = "Log what each animal is fed and how much, along with the cost, to plan rations and track spend.",
-                    actionLabel = "Add Record",
-                    onAction = onAddRecord
-                )
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = FarmUi.cardShape,
+                    colors = CardDefaults.cardColors(containerColor = feedingCardBg)
                 ) {
-                    item {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = FarmUi.cardShape,
-                            colors = CardDefaults.cardColors(containerColor = FarmUi.surfaceMint)
-                        ) {
-                            Column(Modifier.padding(16.dp)) {
-                                Text("Fed Today", color = FarmUi.textMuted, style = MaterialTheme.typography.bodySmall)
-                                Text("${fedToday} kg", color = FarmUi.green, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
-                            }
-                        }
+                    Column(Modifier.padding(18.dp)) {
+                        Text("Fed Today", color = Color.White.copy(alpha = .8f), style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "${if (fedToday % 1.0 == 0.0) fedToday.toInt().toString() else String.format(Locale.US, "%.1f", fedToday)} kg",
+                            color = if (isSystemInDarkTheme()) Color(0xFF80E3A7) else Color(0xFFDFF2E4),
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.headlineSmall
+                        )
                     }
-                    items(records) { record ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = FarmUi.surfaceMint)
-                        ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = "${record.feedType} - ${record.quantityKg} kg",
-                                        fontWeight = FontWeight.Bold,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = FarmUi.deepGreen,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    val dateStr = SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(record.dateMillis))
-                                    Text(
-                                        text = dateStr,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = FarmUi.textMuted
-                                    )
-                                    FarmDeleteButton(
-                                        description = "${record.feedType} feeding record",
-                                        onDelete = { onDeleteRecord(record.id) }
-                                    )
-                                }
-
-                                if (record.costUgx != null) {
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = "Cost: UGX ${record.costUgx}",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = FarmUi.ink
-                                    )
-                                }
+                }
+            }
+            if (records.isEmpty()) {
+                item {
+                    Box(Modifier.fillMaxWidth().height(260.dp), contentAlignment = Alignment.Center) {
+                        Text("No feeding records yet.", color = FarmUi.textMuted, style = MaterialTheme.typography.bodyLarge)
+                    }
+                }
+            } else {
+                items(records, key = { it.id }) { record ->
+                    val animal = animals.firstOrNull { it.id == record.linkedAnimalId }
+                    val linkedText = animal?.let { listOf(it.tagNumber, it.name).filter(String::isNotBlank).joinToString(" · ") }
+                        ?.takeIf(String::isNotBlank) ?: "General (whole farm)"
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = CardDefaults.cardColors(containerColor = feedingCardBg)
+                    ) {
+                        Column(Modifier.padding(start = 16.dp, top = 14.dp, end = 8.dp, bottom = 14.dp)) {
+                            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    record.feedType,
+                                    Modifier.weight(1f),
+                                    color = if (isSystemInDarkTheme()) Color(0xFF80E3A7) else Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
+                                Text(
+                                    "${if (record.quantityKg % 1.0 == 0.0) record.quantityKg.toInt().toString() else record.quantityKg} kg",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                                FarmDeleteButton(
+                                    description = "${record.feedType} feeding record",
+                                    onDelete = { onDeleteRecord(record.id) }
+                                )
+                            }
+                            Text(linkedText, color = Color.White.copy(alpha = .85f), style = MaterialTheme.typography.bodySmall)
+                            Text(
+                                SimpleDateFormat("dd MMM yyyy", Locale.getDefault()).format(Date(record.dateMillis)),
+                                color = Color.White.copy(alpha = .75f),
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            record.costUgx?.let {
+                                Text("Cost: UGX ${it.toLong()}", color = Color.White.copy(alpha = .9f), style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }
@@ -155,4 +157,10 @@ fun FeedingScreen(
             }
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun FeedingScreenPreview() {
+    FarmOsTheme { FeedingScreen(emptyList(), {}, {}, {}) }
 }

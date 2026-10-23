@@ -1,6 +1,7 @@
 package com.samuel.farmos.ui.viewmodel
 
 import android.app.Application
+import android.content.Context
 import android.net.Uri
 import android.util.Base64
 import android.util.Log
@@ -10,12 +11,12 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.samuel.farmos.BuildConfig
 import com.samuel.farmos.data.AiChatRepository
-import com.samuel.farmos.data.AnthropicFarmAiService
 import com.samuel.farmos.data.FarmAiContextRepository
 import com.samuel.farmos.data.FarmAiEmptyAnswerException
 import com.samuel.farmos.data.FarmAiImage
 import com.samuel.farmos.data.FarmAiService
 import com.samuel.farmos.data.FarmRepository
+import com.samuel.farmos.data.GeminiFarmAiService
 import com.samuel.farmos.data.Recurrence
 import com.samuel.farmos.data.SavedAiChat
 import com.samuel.farmos.data.SavedAiMessage
@@ -23,7 +24,6 @@ import com.samuel.farmos.data.Task
 import com.samuel.farmos.data.TaskCategory
 import com.samuel.farmos.data.toUserMessage
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 sealed interface AiUiState {
@@ -65,19 +66,24 @@ class FarmAiViewModel(application: Application) : AndroidViewModel(application) 
     private val farmRepository = FarmRepository(db)
     private val chatRepository = AiChatRepository(db)
     private val farmAiContextRepository = FarmAiContextRepository(db)
+    private val prefs = application.getSharedPreferences("farm_ai_prefs", Context.MODE_PRIVATE)
 
-    /**
-     * The model call. The key and base URL come from the build, not from the
-     * source tree, so a published build points at a proxy that holds the key
-     * server-side.
-     */
-    private val aiService: FarmAiService = AnthropicFarmAiService(
-        apiKey = BuildConfig.ANTHROPIC_API_KEY,
-        baseUrl = BuildConfig.ANTHROPIC_BASE_URL,
-        authTokenProvider = {
-            FirebaseAuth.getInstance().currentUser?.getIdToken(false)?.await()?.token
-        }
-    )
+    private fun createAiService(): FarmAiService {
+        val customGeminiKey = prefs.getString("gemini_api_key", null)?.takeIf { it.isNotBlank() }
+        val buildGeminiKey = BuildConfig.GEMINI_API_KEY.takeIf { it.isNotBlank() }
+        val geminiKey = customGeminiKey ?: buildGeminiKey ?: ""
+        return GeminiFarmAiService(apiKey = geminiKey)
+    }
+
+    private var aiService: FarmAiService = createAiService()
+
+    fun setCustomGeminiApiKey(key: String) {
+        prefs.edit().putString("gemini_api_key", key.trim()).apply()
+        aiService = createAiService()
+    }
+
+    fun getGeminiApiKey(): String =
+        prefs.getString("gemini_api_key", "") ?: BuildConfig.GEMINI_API_KEY
 
     private var userId: String? = FirebaseAuth.getInstance().currentUser?.uid
     private var farmId: String? = null
@@ -200,16 +206,12 @@ class FarmAiViewModel(application: Application) : AndroidViewModel(application) 
         _isLoading.value = true
         _uiState.value = AiUiState.Loading
 
-        // A new question replaces the previous one.
         requestJob?.cancel()
 
         requestJob = viewModelScope.launch {
             try {
                 persistMessage(isUser = true, text = promptText, attachment = attachment)
 
-                // The farm's records are the assistant's context. If they
-                // cannot be read the question is still answered, but the
-                // farmer is told the answer is not based on the records.
                 var contextFailed = false
                 val farmContext = farmAiContextRepository.loadContextOrEmpty(uid, fid) {
                     contextFailed = true
@@ -220,8 +222,6 @@ class FarmAiViewModel(application: Application) : AndroidViewModel(application) 
                 val promptForModel = if (documentText.isNullOrBlank()) promptText else
                     "$promptText\n\nAttached text document (${attachment?.displayName}):\n${documentText}"
 
-                // The reply is shown as it arrives, so the assistant bubble
-                // is added up front and filled in as the text streams in.
                 val replyId = nextMessageId++
                 val reply = StringBuilder()
                 _messages.value = _messages.value + AiChatMessage(
@@ -267,12 +267,6 @@ class FarmAiViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    /**
-     * Reads an attached photo and encodes it for the API.
-     *
-     * Photos are downscaled first: a full-resolution camera shot is several
-     * megabytes, and the API rejects oversized images.
-     */
     private suspend fun loadImage(attachment: AiAttachment): FarmAiImage? {
         return withContext(Dispatchers.IO) {
             if (!attachment.mimeType.startsWith("image/")) return@withContext null

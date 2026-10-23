@@ -1,12 +1,13 @@
 package com.samuel.farmos.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,10 +49,10 @@ fun HealthCaseDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Health Case Details", fontWeight = FontWeight.Bold) },
+                title = { Text("Health Case Details", fontWeight = FontWeight.Bold, color = FarmUi.green) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FarmUi.green)
                     }
                 },
                 actions = {
@@ -64,7 +65,8 @@ fun HealthCaseDetailScreen(
                 },
                 colors = FarmUi.topAppBarColors()
             )
-        }
+        },
+        containerColor = FarmUi.background
     ) { innerPadding ->
         Surface(
             modifier = Modifier
@@ -90,33 +92,34 @@ fun HealthCaseDetailScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
+                        border = BorderStroke(1.dp, FarmUi.cardBorder)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
                                 text = healthCase.mainComplaint,
                                 style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = FarmUi.deepGreen
+                                color = FarmUi.green
                             )
 
                             Spacer(modifier = Modifier.height(8.dp))
 
                             val dateStr = SimpleDateFormat("d MMM yyyy, HH:mm", Locale.getDefault()).format(Date(healthCase.createdDateMillis))
-                            Text("Animal Tag: ${healthCase.linkedAnimalId}", style = MaterialTheme.typography.bodyLarge)
+                            Text("Animal Tag: ${healthCase.linkedAnimalId}", style = MaterialTheme.typography.bodyLarge, color = FarmUi.ink)
                             Text("Logged: $dateStr", style = MaterialTheme.typography.bodySmall, color = FarmUi.textMuted)
-                            Text("Status: ${healthCase.status.name}", style = MaterialTheme.typography.bodyMedium, color = FarmUi.green)
+                            Text("Status: ${healthCase.status.name}", style = MaterialTheme.typography.bodyMedium, color = FarmUi.green, fontWeight = FontWeight.SemiBold)
 
                             if (healthCase.notes.isNotBlank()) {
                                 Spacer(modifier = Modifier.height(12.dp))
-                                Text("Notes / Treatments:", fontWeight = FontWeight.Bold)
-                                Text(healthCase.notes, style = MaterialTheme.typography.bodyMedium)
+                                Text("Notes / Treatments:", fontWeight = FontWeight.Bold, color = FarmUi.ink)
+                                Text(healthCase.notes, style = MaterialTheme.typography.bodyMedium, color = FarmUi.ink)
                             }
 
                             if (!healthCase.aiAnalysis.isNullOrBlank()) {
                                 Spacer(modifier = Modifier.height(12.dp))
                                 Text("AI Analysis:", fontWeight = FontWeight.Bold, color = FarmUi.green)
-                                Text(healthCase.aiAnalysis!!, style = MaterialTheme.typography.bodyMedium)
+                                Text(healthCase.aiAnalysis!!, style = MaterialTheme.typography.bodyMedium, color = FarmUi.ink)
                             }
                         }
                     }
@@ -124,10 +127,11 @@ fun HealthCaseDetailScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(18.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                        colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
+                        border = BorderStroke(1.dp, FarmUi.cardBorder)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Update Case Status", fontWeight = FontWeight.Bold)
+                            Text("Update Case Status", fontWeight = FontWeight.Bold, color = FarmUi.ink)
                             Spacer(modifier = Modifier.height(8.dp))
 
                             HealthCaseStatus.values().forEach { st ->
@@ -135,12 +139,12 @@ fun HealthCaseDetailScreen(
                                     onClick = { onUpdateStatus(st) },
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(vertical = 2.dp),
+                                        .padding(vertical = 4.dp),
                                     enabled = healthCase.status != st,
-                                    shape = RoundedCornerShape(10.dp),
-                                    colors = if (healthCase.status == st) FarmUi.buttonColors() else FarmUi.secondaryButtonColors()
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = FarmUi.buttonColors()
                                 ) {
-                                    Text("Mark as ${st.name}")
+                                    Text("Mark as ${st.name.lowercase().replaceFirstChar { it.uppercase() }}", fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -156,16 +160,8 @@ fun HealthCaseDetailScreen(
 fun HealthCaseDetailScreenPreview() {
     FarmOsTheme {
         HealthCaseDetailScreen(
-            healthCase = HealthCase(
-                id = "1",
-                linkedAnimalId = "101",
-                mainComplaint = "Loss of appetite and lethargy",
-                notes = "Administered antibiotic injection",
-                status = HealthCaseStatus.ACTIVE,
-                createdDateMillis = System.currentTimeMillis()
-            ),
+            healthCase = HealthCase(id = "1", mainComplaint = "Limping left leg", status = HealthCaseStatus.ACTIVE),
             onUpdateStatus = {},
-            onDelete = {},
             onBack = {}
         )
     }

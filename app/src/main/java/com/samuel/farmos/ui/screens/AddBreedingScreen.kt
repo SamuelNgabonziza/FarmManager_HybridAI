@@ -1,19 +1,19 @@
 package com.samuel.farmos.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -38,9 +38,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.samuel.farmos.data.Animal
 import com.samuel.farmos.data.BreedingEventType
 import com.samuel.farmos.data.BreedingRecord
-import com.samuel.farmos.data.Animal
 import com.samuel.farmos.ui.components.FarmDatePickerField
 import com.samuel.farmos.ui.theme.FarmOsTheme
 
@@ -57,6 +57,7 @@ fun AddBreedingScreen(
     var animalId by remember { mutableStateOf("") }
     var animalExpanded by remember { mutableStateOf(false) }
     var eventDate by remember { mutableStateOf(System.currentTimeMillis()) }
+
     fun save() = onSave(BreedingRecord(linkedAnimalId = animalId, eventType = eventType, notes = notes.trim(), eventDateMillis = eventDate))
 
     Scaffold(
@@ -68,93 +69,95 @@ fun AddBreedingScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
-                actions = { TextButton(onClick = ::save, enabled = animals.isEmpty() || animalId.isNotBlank()) { Text("Save", fontWeight = FontWeight.Bold) } },
+                actions = {
+                    TextButton(onClick = ::save, enabled = animals.isEmpty() || animalId.isNotBlank()) {
+                        Text("Save", fontWeight = FontWeight.Bold, color = FarmUi.green)
+                    }
+                },
                 colors = FarmUi.topAppBarColors()
             )
-        }
+        },
+        containerColor = FarmUi.background
     ) { innerPadding ->
-        Surface(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            color = FarmUi.background
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+                .imePadding(),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
-                    .imePadding(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
+                border = BorderStroke(1.dp, FarmUi.cardBorder)
             ) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        ExposedDropdownMenuBox(expanded = animalExpanded, onExpandedChange = { animalExpanded = !animalExpanded }) {
-                            OutlinedTextField(
-                                value = animals.firstOrNull { it.id == animalId }?.let { "${it.tagNumber} · ${it.name.ifBlank { it.breed }}" }.orEmpty(),
-                                onValueChange = {}, readOnly = true,
-                                label = { Text("Animal") }, placeholder = { Text("Select an animal") },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = animalExpanded) },
-                                modifier = Modifier.fillMaxWidth().menuAnchor(), shape = FarmUi.fieldShape, colors = FarmUi.textFieldColors()
-                            )
-                            ExposedDropdownMenu(expanded = animalExpanded, onDismissRequest = { animalExpanded = false }) {
-                                animals.forEach { animal ->
-                                    DropdownMenuItem(text = { Text("${animal.tagNumber} · ${animal.name.ifBlank { animal.breed }}") }, onClick = { animalId = animal.id; animalExpanded = false })
-                                }
-                            }
-                        }
-                        ExposedDropdownMenuBox(
-                            expanded = typeExpanded,
-                            onExpandedChange = { typeExpanded = !typeExpanded }
-                        ) {
-                            OutlinedTextField(
-                                value = eventTypeLabel(eventType),
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text("Event Type") },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor(),
-                                shape = FarmUi.fieldShape,
-                                colors = FarmUi.textFieldColors()
-                            )
-                            ExposedDropdownMenu(
-                                expanded = typeExpanded,
-                                onDismissRequest = { typeExpanded = false }
-                            ) {
-                                BreedingEventType.values().forEach { bType ->
-                                    DropdownMenuItem(
-                                        text = { Text(eventTypeLabel(bType)) },
-                                        onClick = {
-                                            eventType = bType
-                                            typeExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        Text("Event Date", color = FarmUi.green, fontWeight = FontWeight.SemiBold)
-                        FarmDatePickerField(label = "", initialMillis = eventDate, onDateSelected = { eventDate = it })
-
+                    FarmFormLabel("Animal")
+                    ExposedDropdownMenuBox(expanded = animalExpanded, onExpandedChange = { animalExpanded = !animalExpanded }) {
                         OutlinedTextField(
-                            value = notes,
-                            onValueChange = { notes = it },
-                            label = { Text("Notes") },
-                            modifier = Modifier.fillMaxWidth(),
+                            value = animals.firstOrNull { it.id == animalId }?.let { "${it.tagNumber} · ${it.name.ifBlank { it.breed }}" }.orEmpty(),
+                            onValueChange = {}, readOnly = true,
+                            placeholder = { Text("Select an animal") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = animalExpanded) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor(), shape = FarmUi.fieldShape, colors = FarmUi.textFieldColors()
+                        )
+                        ExposedDropdownMenu(expanded = animalExpanded, onDismissRequest = { animalExpanded = false }) {
+                            animals.forEach { animal ->
+                                DropdownMenuItem(text = { Text("${animal.tagNumber} · ${animal.name.ifBlank { animal.breed }}") }, onClick = { animalId = animal.id; animalExpanded = false })
+                            }
+                        }
+                    }
+
+                    FarmFormLabel("Event Type")
+                    ExposedDropdownMenuBox(
+                        expanded = typeExpanded,
+                        onExpandedChange = { typeExpanded = !typeExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = eventTypeLabel(eventType),
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = typeExpanded) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
                             shape = FarmUi.fieldShape,
                             colors = FarmUi.textFieldColors()
                         )
-
+                        ExposedDropdownMenu(
+                            expanded = typeExpanded,
+                            onDismissRequest = { typeExpanded = false }
+                        ) {
+                            BreedingEventType.values().forEach { bType ->
+                                DropdownMenuItem(
+                                    text = { Text(eventTypeLabel(bType)) },
+                                    onClick = {
+                                        eventType = bType
+                                        typeExpanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
+
+                    FarmDatePickerField(label = "Date", initialMillis = eventDate, onDateSelected = { eventDate = it })
+
+                    FarmFormLabel("Notes (optional)")
+                    OutlinedTextField(
+                        value = notes,
+                        onValueChange = { notes = it },
+                        placeholder = { Text("e.g. Sire details, vet observations") },
+                        modifier = Modifier.fillMaxWidth(),
+                        minLines = 2,
+                        shape = FarmUi.fieldShape,
+                        colors = FarmUi.textFieldColors()
+                    )
                 }
             }
         }
@@ -162,20 +165,15 @@ fun AddBreedingScreen(
 }
 
 private fun eventTypeLabel(type: BreedingEventType): String = when (type) {
-    BreedingEventType.HEAT -> "Heat Detected"
-    BreedingEventType.INSEMINATION -> "Insemination"
+    BreedingEventType.HEAT -> "Heat Detection"
+    BreedingEventType.INSEMINATION -> "Insemination / Mating"
     BreedingEventType.PREGNANCY_CHECK -> "Pregnancy Check"
-    BreedingEventType.BIRTH -> "Birth"
-    BreedingEventType.ABORTION -> "Abortion"
+    BreedingEventType.BIRTH -> "Birth / Calving"
+    BreedingEventType.ABORTION -> "Abortion / Miscarriage"
 }
 
 @Preview(showBackground = true)
 @Composable
 fun AddBreedingScreenPreview() {
-    FarmOsTheme {
-        AddBreedingScreen(
-            onSave = {},
-            onBack = {}
-        )
-    }
+    FarmOsTheme { AddBreedingScreen(onSave = {}, onBack = {}) }
 }

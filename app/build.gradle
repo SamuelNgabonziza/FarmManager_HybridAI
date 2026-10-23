@@ -16,6 +16,9 @@ def anthropicApiKey = project.findProperty("farmos.anthropicApiKey")
 def anthropicBaseUrl = project.findProperty("farmos.anthropicBaseUrl")
         ?: System.getenv("ANTHROPIC_BASE_URL")
         ?: ""
+def geminiApiKey = project.findProperty("farmos.geminiApiKey")
+        ?: System.getenv("GEMINI_API_KEY")
+        ?: ""
 
 android {
     namespace "com.samuel.farmos"
@@ -31,6 +34,7 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField "String", "ANTHROPIC_API_KEY", "\"${anthropicApiKey}\""
         buildConfigField "String", "ANTHROPIC_BASE_URL", "\"${anthropicBaseUrl}\""
+        buildConfigField "String", "GEMINI_API_KEY", "\"${geminiApiKey}\""
         buildConfigField "String", "GOOGLE_WEB_CLIENT_ID", "\"385857701045-u45j8pc5d1boc7iekn5n9allq2oqughg.apps.googleusercontent.com\""
     }
 

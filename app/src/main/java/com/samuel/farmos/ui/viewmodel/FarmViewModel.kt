@@ -173,6 +173,20 @@ class FarmViewModel(
         sessionManager.setActiveFarmId(farm.id)
     }
 
+    suspend fun deleteFarm(farm: Farm) {
+        val uid = currentUid() ?: return
+        runCatching { repository.deleteFarm(uid, farm.id) }
+            .onSuccess {
+                runCatching { repository.getFarms(uid) }
+                    .onSuccess { list ->
+                        _farms.value = list
+                        ensureActiveFarm(list)
+                    }
+                    .onFailure { _errorMessage.value = "Farm deleted, but the farm list could not be refreshed: ${it.message}" }
+            }
+            .onFailure { _errorMessage.value = "Could not delete farm: ${it.message}" }
+    }
+
     fun consumeError() {
         _errorMessage.value = null
     }

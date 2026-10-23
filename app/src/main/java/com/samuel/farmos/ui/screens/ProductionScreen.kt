@@ -1,5 +1,8 @@
 package com.samuel.farmos.ui.screens
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -9,35 +12,42 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.LocalDrink
 import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.samuel.farmos.data.ProductionRecord
 import com.samuel.farmos.data.ProductionType
 import com.samuel.farmos.ui.components.FarmDeleteButton
-import com.samuel.farmos.ui.components.FarmEmptyState
 import com.samuel.farmos.ui.theme.FarmOsTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -70,8 +80,17 @@ fun ProductionScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Text("Production & Yields", fontWeight = FontWeight.Bold)
-                        Text("Daily milk and animal weight tracking", style = MaterialTheme.typography.bodySmall, color = FarmUi.textMuted)
+                        Text("Production & Yields", fontWeight = FontWeight.Bold, color = FarmUi.green)
+                        Text(
+                            "Daily milk and animal weight tracking",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = FarmUi.textMuted
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FarmUi.green)
                     }
                 },
                 colors = FarmUi.topAppBarColors()
@@ -81,9 +100,10 @@ fun ProductionScreen(
             ExtendedFloatingActionButton(
                 onClick = { onAddRecord(selectedType) },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text(if (selectedType == ProductionType.MILK) "Log Production" else "Log Weight") },
+                text = { Text(if (selectedType == ProductionType.MILK) "Log Production" else "Log Weight", fontWeight = FontWeight.Bold) },
                 containerColor = FarmUi.orange,
-                contentColor = MaterialTheme.colorScheme.onPrimary
+                contentColor = if (isSystemInDarkTheme()) Color(0xFF3D2005) else Color.White,
+                shape = RoundedCornerShape(24.dp)
             )
         },
         containerColor = FarmUi.background
@@ -94,51 +114,137 @@ fun ProductionScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = selectedType == ProductionType.MILK,
-                        onClick = { selectedType = ProductionType.MILK },
-                        label = { Text("🥛 Daily Milk") },
-                        modifier = Modifier.weight(1f)
-                    )
-                    FilterChip(
-                        selected = selectedType == ProductionType.WEIGHT,
-                        onClick = { selectedType = ProductionType.WEIGHT },
-                        label = { Text("🐄 Animal Weight") },
-                        modifier = Modifier.weight(1f)
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val milkSelected = selectedType == ProductionType.MILK
+                    val selectedBg = if (isSystemInDarkTheme()) Color(0xFF80E3A7) else Color(0xFF26733A)
+                    val selectedText = if (isSystemInDarkTheme()) Color(0xFF143820) else Color.White
+
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable(role = Role.Tab) { selectedType = ProductionType.MILK },
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (milkSelected) selectedBg else FarmUi.surface,
+                        border = BorderStroke(1.dp, if (milkSelected) selectedBg else FarmUi.cardBorder)
+                    ) {
+                        Text(
+                            text = "🥛 Daily Milk",
+                            modifier = Modifier.padding(vertical = 12.dp),
+                            color = if (milkSelected) selectedText else FarmUi.ink,
+                            fontWeight = if (milkSelected) FontWeight.Bold else FontWeight.Medium,
+                            style = MaterialTheme.typography.titleSmall,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    Surface(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clickable(role = Role.Tab) { selectedType = ProductionType.WEIGHT },
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (!milkSelected) selectedBg else FarmUi.surface,
+                        border = BorderStroke(1.dp, if (!milkSelected) selectedBg else FarmUi.cardBorder)
+                    ) {
+                        Text(
+                            text = "⚖️ Animal Weight",
+                            modifier = Modifier.padding(vertical = 12.dp),
+                            color = if (!milkSelected) selectedText else FarmUi.ink,
+                            fontWeight = if (!milkSelected) FontWeight.Bold else FontWeight.Medium,
+                            style = MaterialTheme.typography.titleSmall,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
             }
             item {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    SummaryCard("Today's Total", "${formatAmount(todayTotal)} ${if (selectedType == ProductionType.MILK) "L" else "kg"}", FarmUi.surfaceWarm, Modifier.weight(1f))
-                    SummaryCard("Last 7 Days", "${formatAmount(weekTotal)} ${if (selectedType == ProductionType.MILK) "L" else "kg"}", FarmUi.surfaceMint, Modifier.weight(1f))
+                    val amberBg = if (isSystemInDarkTheme()) Color(0xFF382C18) else Color(0xFFFFF8E7)
+                    val amberBorder = if (isSystemInDarkTheme()) Color(0xFF5E4924) else Color(0xFFFFE082)
+                    val amberText = if (isSystemInDarkTheme()) Color(0xFFFFA94D) else Color(0xFFD97706)
+
+                    val mintBg = if (isSystemInDarkTheme()) Color(0xFF1B3828) else Color(0xFFE6F7F0)
+                    val mintBorder = if (isSystemInDarkTheme()) Color(0xFF2C5E40) else Color(0xFFA7F3D0)
+                    val mintText = if (isSystemInDarkTheme()) Color(0xFF80E3A7) else Color(0xFF10B981)
+
+                    SummaryCard(
+                        title = "Today's Total",
+                        value = "${formatAmount(todayTotal)} ${if (selectedType == ProductionType.MILK) "L" else "kg"}",
+                        backgroundColor = amberBg,
+                        borderColor = amberBorder,
+                        textColor = amberText,
+                        modifier = Modifier.weight(1f)
+                    )
+                    SummaryCard(
+                        title = "Last 7 Days",
+                        value = "${formatAmount(weekTotal)} ${if (selectedType == ProductionType.MILK) "L" else "kg"}",
+                        backgroundColor = mintBg,
+                        borderColor = mintBorder,
+                        textColor = mintText,
+                        modifier = Modifier.weight(1f)
+                    )
                 }
             }
             if (selectedRecords.isEmpty()) {
                 item {
-                    FarmEmptyState(
-                        icon = Icons.Default.ShowChart,
-                        title = if (selectedType == ProductionType.MILK) "No milk records yet" else "No animal weights yet",
-                        message = "Tap below to record your first ${if (selectedType == ProductionType.MILK) "milk yield" else "animal weight"}.",
-                        actionLabel = if (selectedType == ProductionType.MILK) "Log Production" else "Log Weight",
-                        onAction = { onAddRecord(selectedType) }
-                    )
+                    Column(
+                        modifier = Modifier.fillMaxWidth().height(260.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            if (selectedType == ProductionType.MILK) Icons.Default.LocalDrink else Icons.Default.ShowChart,
+                            contentDescription = null,
+                            tint = FarmUi.textMuted.copy(alpha = 0.6f),
+                            modifier = Modifier.size(44.dp)
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            if (selectedType == ProductionType.MILK) "No milk records yet" else "No animal weights yet",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = FarmUi.ink
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            "Tap + below to add your first ${if (selectedType == ProductionType.MILK) "milk log" else "weight record"}.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = FarmUi.textMuted
+                        )
+                    }
                 }
             } else {
                 items(selectedRecords, key = { it.id }) { record ->
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = FarmUi.cardShape,
-                        colors = CardDefaults.cardColors(containerColor = FarmUi.surfaceMint)
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
+                        border = BorderStroke(1.dp, FarmUi.cardBorder),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Column {
-                                Text("${formatAmount(record.quantity)} ${if (record.type == ProductionType.MILK) "L" else "kg"}", fontWeight = FontWeight.Bold, color = FarmUi.green)
-                                Spacer(Modifier.height(3.dp))
-                                Text(SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(record.dateMillis)), style = MaterialTheme.typography.bodySmall, color = FarmUi.textMuted)
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "${formatAmount(record.quantity)} ${if (record.type == ProductionType.MILK) "Litres" else "kg"}",
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = FarmUi.ink
+                                )
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = SimpleDateFormat("d MMM yyyy, h:mm a", Locale.getDefault()).format(Date(record.dateMillis)),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = FarmUi.textMuted
+                                )
                             }
-                            FarmDeleteButton(description = "Production record", onDelete = { onDeleteRecord(record.id) })
+                            FarmDeleteButton(
+                                description = "production record",
+                                onDelete = { onDeleteRecord(record.id) }
+                            )
                         }
                     }
                 }
@@ -148,20 +254,42 @@ fun ProductionScreen(
 }
 
 @Composable
-private fun SummaryCard(title: String, value: String, color: androidx.compose.ui.graphics.Color, modifier: Modifier) {
-    Card(modifier = modifier, shape = FarmUi.cardShape, colors = CardDefaults.cardColors(containerColor = color)) {
-        Column(Modifier.padding(14.dp)) {
+private fun SummaryCard(
+    title: String,
+    value: String,
+    backgroundColor: Color,
+    borderColor: Color,
+    textColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        border = BorderStroke(1.dp, borderColor)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
             Text(title, style = MaterialTheme.typography.bodySmall, color = FarmUi.textMuted)
-            Spacer(Modifier.height(7.dp))
-            Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = FarmUi.green)
+            Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = textColor)
         }
     }
 }
 
-private fun formatAmount(amount: Double): String = if (amount % 1.0 == 0.0) amount.toLong().toString() else String.format(Locale.getDefault(), "%.1f", amount)
+private fun formatAmount(amount: Double): String =
+    if (amount % 1.0 == 0.0) amount.toInt().toString() else String.format(Locale.US, "%.1f", amount)
 
 @Preview(showBackground = true)
 @Composable
 fun ProductionScreenPreview() {
-    FarmOsTheme { ProductionScreen(emptyList(), {}, {}, {}) }
+    FarmOsTheme {
+        ProductionScreen(
+            records = emptyList(),
+            onAddRecord = {},
+            onDeleteRecord = {},
+            onBack = {}
+        )
+    }
 }

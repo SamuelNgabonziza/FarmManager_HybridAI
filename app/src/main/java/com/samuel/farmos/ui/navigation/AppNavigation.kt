@@ -161,10 +161,12 @@ fun AppNavigation(onContentReady: () -> Unit = {}) {
                     farms = farms,
                     activeFarmId = selectedFarmId,
                     isLoading = isLoading,
+                    onBack = { navController.popBackStack() },
                     onSelectFarm = { selected ->
                         farmViewModel.selectFarm(selected)
                         navController.popBackStack()
                     },
+                    onDeleteFarm = { farm -> scope.launch { farmViewModel.deleteFarm(farm) } },
                     onAddFarm = { navController.navigate(Routes.ADD_FARM) }
                 )
             }
@@ -229,7 +231,9 @@ fun AppNavigation(onContentReady: () -> Unit = {}) {
                         onNavigateToAi = { navController.navigate(Routes.AI) },
                         onNavigateToSettings = { navController.navigate(Routes.SETTINGS) },
                         onNavigateToLogin = { navController.navigate(Routes.LOGIN) },
-                        onNavigateToSignUp = { navController.navigate(Routes.AUTH) }
+                        onNavigateToSignUp = { navController.navigate(Routes.AUTH) },
+                        onToggleTask = { task -> scope.launch { farmViewModel.toggleTaskComplete(task) } },
+                        onEditTask = { task -> navController.navigate(Routes.editTask(task.id)) }
                     )
                 }
             }
@@ -248,7 +252,8 @@ fun AppNavigation(onContentReady: () -> Unit = {}) {
                         navController.navigate(Routes.AUTH) {
                             popUpTo(0) { inclusive = true }
                         }
-                    }
+                    },
+                    onBack = { navController.popBackStack() }
                 )
             }
 
@@ -417,8 +422,10 @@ fun AppNavigation(onContentReady: () -> Unit = {}) {
 
             composable(Routes.FEEDING_LIST) {
                 val records by farmViewModel.feedingRecords.collectAsStateWithLifecycle()
+                val animals by farmViewModel.animals.collectAsStateWithLifecycle()
                 FeedingScreen(
                     records = records,
+                    animals = animals,
                     onAddRecord = { navController.navigate(Routes.ADD_FEEDING) },
                     onDeleteRecord = { id -> scope.launch { farmViewModel.deleteFeeding(id) } },
                     onBack = { navController.popBackStack() }
@@ -426,7 +433,9 @@ fun AppNavigation(onContentReady: () -> Unit = {}) {
             }
 
             composable(Routes.ADD_FEEDING) {
+                val animals by farmViewModel.animals.collectAsStateWithLifecycle()
                 AddFeedingScreen(
+                    animals = animals,
                     onSave = { record ->
                         scope.launch {
                             farmViewModel.saveFeeding(record)

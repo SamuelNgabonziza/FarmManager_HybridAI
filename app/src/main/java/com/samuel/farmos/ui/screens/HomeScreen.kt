@@ -18,7 +18,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Assignment
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Restaurant
@@ -32,9 +34,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,17 +72,19 @@ fun HomeScreen(
     onNavigateToAi: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToLogin: () -> Unit = {},
-    onNavigateToSignUp: () -> Unit = {}
+    onNavigateToSignUp: () -> Unit = {},
+    onToggleTask: (Task) -> Unit = {},
+    onEditTask: (Task) -> Unit = {}
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        FarmLogo(46.dp)
+                        FarmLogo(36.dp)
                         Column(modifier = Modifier.padding(start = 10.dp)) {
                             Text(
-                            text = if (isGuest) "FarmOS" else farmName?.takeIf { it.isNotBlank() } ?: "FarmOS",
+                                text = if (isGuest) "FarmOS" else farmName?.takeIf { it.isNotBlank() } ?: "FarmOS",
                                 fontWeight = FontWeight.Bold,
                                 color = FarmUi.green
                             )
@@ -110,8 +115,8 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 18.dp, bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 32.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
                 WelcomeCard(farmName = farmName, isGuest = isGuest, onGetStarted = onNavigateToSignUp)
@@ -134,7 +139,7 @@ fun HomeScreen(
                         value = animalCount.toString(),
                         label = "Animals",
                         iconColor = FarmUi.teal,
-                        iconBackground = FarmUi.surfaceTeal,
+                        iconBackground = FarmUi.iconTeal,
                         borderColor = FarmUi.teal.copy(alpha = 0.28f)
                     )
                     MetricCard(
@@ -143,16 +148,16 @@ fun HomeScreen(
                         value = taskCount.toString(),
                         label = "Tasks",
                         iconColor = FarmUi.green,
-                        iconBackground = FarmUi.surfaceMint,
+                        iconBackground = FarmUi.iconMint,
                         borderColor = FarmUi.green.copy(alpha = 0.24f)
                     )
                     MetricCard(
                         modifier = Modifier.weight(1f),
-                        icon = Icons.Default.ShowChart,
+                        icon = Icons.Default.CalendarMonth,
                         value = String.format("%.1f L", todayMilkLitres),
                         label = "Milk",
                         iconColor = FarmUi.orange,
-                        iconBackground = FarmUi.surfaceWarm,
+                        iconBackground = FarmUi.iconWarm,
                         borderColor = FarmUi.orange.copy(alpha = 0.28f)
                     )
                 }
@@ -174,7 +179,7 @@ fun HomeScreen(
                         subtitle = "Livestock & tags",
                         icon = Icons.Default.Pets,
                         iconColor = FarmUi.teal,
-                        iconBackground = FarmUi.surfaceTeal,
+                        iconBackground = FarmUi.iconTeal,
                         outline = FarmUi.teal.copy(alpha = 0.34f),
                         onClick = onNavigateToAnimals,
                         modifier = Modifier.weight(1f)
@@ -184,7 +189,7 @@ fun HomeScreen(
                         subtitle = "Schedules & alerts",
                         icon = Icons.Default.Assignment,
                         iconColor = FarmUi.teal,
-                        iconBackground = FarmUi.surfaceTeal,
+                        iconBackground = FarmUi.iconTeal,
                         outline = FarmUi.teal.copy(alpha = 0.34f),
                         onClick = onNavigateToTasks,
                         modifier = Modifier.weight(1f)
@@ -199,7 +204,7 @@ fun HomeScreen(
                         subtitle = "Milk & weights",
                         icon = Icons.Default.ShowChart,
                         iconColor = FarmUi.orange,
-                        iconBackground = FarmUi.surfaceWarm,
+                        iconBackground = FarmUi.iconWarm,
                         outline = FarmUi.orange.copy(alpha = 0.34f),
                         onClick = onNavigateToProduction,
                         modifier = Modifier.weight(1f)
@@ -207,9 +212,9 @@ fun HomeScreen(
                     HomeToolCard(
                         title = "Breeding",
                         subtitle = "Matings & due dates",
-                        icon = Icons.Default.ShowChart,
+                        icon = Icons.Default.CalendarMonth,
                         iconColor = FarmUi.purple,
-                        iconBackground = FarmUi.surfaceLavender,
+                        iconBackground = FarmUi.iconLavender,
                         outline = FarmUi.purple.copy(alpha = 0.34f),
                         onClick = onNavigateToBreeding,
                         modifier = Modifier.weight(1f)
@@ -224,7 +229,7 @@ fun HomeScreen(
                         subtitle = "Rations & feeds",
                         icon = Icons.Default.Restaurant,
                         iconColor = FarmUi.orange,
-                        iconBackground = FarmUi.surfacePeach,
+                        iconBackground = FarmUi.iconPeach,
                         outline = FarmUi.orange.copy(alpha = 0.34f),
                         onClick = onNavigateToFeeding,
                         modifier = Modifier.weight(1f)
@@ -234,7 +239,7 @@ fun HomeScreen(
                         subtitle = "Cases & vaccines",
                         icon = Icons.Default.Favorite,
                         iconColor = FarmUi.coral,
-                        iconBackground = FarmUi.surfaceCoral,
+                        iconBackground = FarmUi.iconCoral,
                         outline = FarmUi.coral.copy(alpha = 0.34f),
                         onClick = onNavigateToHealth,
                         modifier = Modifier.weight(1f)
@@ -249,17 +254,17 @@ fun HomeScreen(
                         subtitle = "Finances & sales",
                         icon = Icons.Default.TrendingUp,
                         iconColor = FarmUi.navy,
-                        iconBackground = FarmUi.surfaceBlue,
+                        iconBackground = FarmUi.iconBlue,
                         outline = FarmUi.navy.copy(alpha = 0.34f),
                         onClick = onNavigateToFinance,
                         modifier = Modifier.weight(1f)
                     )
                     HomeToolCard(
                         title = "Ask AI",
-                        subtitle = "Farm advice",
-                        icon = Icons.Default.Favorite,
+                        subtitle = "Symptom diagnosis",
+                        icon = Icons.Default.ArrowForward,
                         iconColor = FarmUi.orange,
-                        iconBackground = FarmUi.surfaceWarm,
+                        iconBackground = FarmUi.iconWarm,
                         outline = FarmUi.orange.copy(alpha = 0.34f),
                         onClick = onNavigateToAi,
                         modifier = Modifier.weight(1f)
@@ -274,13 +279,26 @@ fun HomeScreen(
                         subtitle = "Farm & password",
                         icon = Icons.Default.Settings,
                         iconColor = FarmUi.textMuted,
-                        iconBackground = FarmUi.surfaceMint,
+                        iconBackground = FarmUi.iconMint,
                         outline = FarmUi.cardBorder,
                         onClick = onNavigateToSettings,
                         modifier = Modifier.weight(1f)
                     )
                     Spacer(modifier = Modifier.weight(1f))
                 }
+            }
+
+            item {
+                Spacer(modifier = Modifier.height(4.dp))
+                TodayOnFarmCard(
+                    tasks = tasks,
+                    activeHealthCaseCount = activeHealthCaseCount,
+                    birthsDueSoonCount = birthsDueSoonCount,
+                    onHealthClick = onNavigateToHealth,
+                    onBreedingClick = onNavigateToBreeding,
+                    onToggleTask = onToggleTask,
+                    onEditTask = onEditTask
+                )
             }
         }
     }
@@ -295,9 +313,9 @@ private fun WelcomeCard(farmName: String?, isGuest: Boolean, onGetStarted: () ->
                 brush = Brush.horizontalGradient(
                     listOf(Color(0xFF075C43), Color(0xFF009D8D))
                 ),
-                shape = RoundedCornerShape(26.dp)
+                shape = RoundedCornerShape(22.dp)
             )
-            .padding(horizontal = 22.dp, vertical = 20.dp)
+            .padding(horizontal = 18.dp, vertical = 20.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -322,7 +340,11 @@ private fun WelcomeCard(farmName: String?, isGuest: Boolean, onGetStarted: () ->
             if (isGuest) {
                 TextButton(onClick = onGetStarted) { Text("Get Started Free", color = Color.White, fontWeight = FontWeight.Bold) }
             } else {
-                Text(text = "🏡", style = MaterialTheme.typography.headlineLarge)
+                Surface(color = Color.White.copy(alpha = 0.14f), shape = CircleShape) {
+                    Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+                        Text(text = "🏡", style = MaterialTheme.typography.headlineMedium)
+                    }
+                }
             }
         }
     }
@@ -340,25 +362,25 @@ private fun MetricCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
         border = BorderStroke(1.dp, borderColor)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 12.dp),
+                .padding(horizontal = 10.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(24.dp)
                     .background(iconBackground, RoundedCornerShape(11.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
+                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(14.dp))
             }
-            Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = FarmUi.ink)
+            Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = FarmUi.ink)
             Text(label, style = MaterialTheme.typography.bodySmall, color = FarmUi.textMuted)
         }
     }
@@ -377,23 +399,23 @@ private fun HomeToolCard(
 ) {
     Card(
         modifier = modifier.clickable(role = Role.Button, onClick = onClick),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
         border = BorderStroke(1.dp, outline)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
+                    .size(36.dp)
                     .background(iconBackground, RoundedCornerShape(15.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(25.dp))
+                Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(20.dp))
             }
             Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = FarmUi.ink)
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = FarmUi.textMuted)

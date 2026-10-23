@@ -63,7 +63,17 @@ class FarmRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
     }
 
     suspend fun deleteFarm(uid: String, farmId: String) {
-        farmsCollection(uid).document(farmId).delete().await()
+        val farmDocument = farmsCollection(uid).document(farmId)
+        // Firestore keeps subcollections when a parent document is removed.
+        // Remove this farm's records first so deleting it does not leave
+        // unreachable livestock and production data behind.
+        listOf("animals", "tasks", "production", "breeding", "feeding", "finances", "healthCases")
+            .forEach { collectionName ->
+                farmDocument.collection(collectionName).get().await().documents.forEach { record ->
+                    record.reference.delete().await()
+                }
+            }
+        farmDocument.delete().await()
     }
 
     // Animals

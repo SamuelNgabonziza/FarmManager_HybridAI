@@ -6,6 +6,7 @@
         so the window background and system bar icons match the Compose dark theme.
     -->
     <style name="Theme.FarmOs" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans-serif</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">true</item>

@@ -1,12 +1,13 @@
 package com.samuel.farmos.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,10 +27,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,13 +38,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.samuel.farmos.data.Animal
 import com.samuel.farmos.data.Recurrence
 import com.samuel.farmos.data.Task
 import com.samuel.farmos.data.TaskCategory
-import com.samuel.farmos.data.Animal
 import com.samuel.farmos.ui.components.FarmDatePickerField
 import com.samuel.farmos.ui.theme.FarmOsTheme
 
@@ -61,16 +62,11 @@ fun AddEditTaskScreen(
     var linkedAnimalId by rememberSaveable(task?.id) { mutableStateOf(task?.linkedAnimalId ?: "") }
     var category by rememberSaveable(task?.id) { mutableStateOf(task?.category ?: TaskCategory.OTHER) }
     var recurrence by rememberSaveable(task?.id) { mutableStateOf(task?.recurrence ?: Recurrence.NONE) }
-    // The due date is chosen with the Material date picker. A new task
-    // defaults to today, which is what a task created "now" should be due.
     var dueDateMillis by rememberSaveable(task?.id) {
         mutableStateOf(task?.dueDateMillis?.takeIf { it > 0L } ?: startOfTodayMillis())
     }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
-    // The task arrives asynchronously from Firestore, so the form is populated once
-    // the document for this id shows up. Re-runs only when the id changes, so it
-    // never overwrites what the user is typing.
     LaunchedEffect(task?.id) {
         task?.let {
             title = it.title
@@ -84,6 +80,7 @@ fun AddEditTaskScreen(
     var categoryExpanded by remember { mutableStateOf(false) }
     var recurrenceExpanded by remember { mutableStateOf(false) }
     var animalExpanded by remember { mutableStateOf(false) }
+
     fun save() {
         if (title.isNotBlank()) onSave((task ?: Task()).copy(
             title = title.trim(), category = category, linkedAnimalId = linkedAnimalId.ifBlank { null },
@@ -100,140 +97,135 @@ fun AddEditTaskScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
-                actions = { TextButton(onClick = ::save, enabled = title.isNotBlank()) { Text("Save", fontWeight = FontWeight.Bold) } },
+                actions = {
+                    TextButton(onClick = ::save, enabled = title.isNotBlank()) {
+                        Text("Save", fontWeight = FontWeight.Bold, color = if (title.isNotBlank()) FarmUi.green else FarmUi.textMuted)
+                    }
+                },
                 colors = FarmUi.topAppBarColors()
             )
-        }
+        },
+        containerColor = FarmUi.background
     ) { innerPadding ->
-        Surface(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            color = FarmUi.background
+                .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
+                .imePadding(),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp)
-                    .imePadding(),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
+                border = BorderStroke(1.dp, FarmUi.cardBorder)
             ) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    FarmFormLabel("Task Title")
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
+                        placeholder = { Text("e.g. Morning Milking, Clean shed") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = FarmUi.fieldShape,
+                        colors = FarmUi.textFieldColors()
+                    )
+
+                    FarmFormLabel("Category")
+                    ExposedDropdownMenuBox(
+                        expanded = categoryExpanded,
+                        onExpandedChange = { categoryExpanded = !categoryExpanded }
                     ) {
                         OutlinedTextField(
-                            value = title,
-                            onValueChange = { title = it },
-                            label = { Text("Task Title *") },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
+                            value = if (category == TaskCategory.HEALTH) "Vaccination" else category.name.lowercase().replaceFirstChar { it.uppercase() },
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor(),
                             shape = FarmUi.fieldShape,
                             colors = FarmUi.textFieldColors()
                         )
-
-                        ExposedDropdownMenuBox(expanded = animalExpanded, onExpandedChange = { animalExpanded = !animalExpanded }) {
-                            OutlinedTextField(
-                                value = animals.firstOrNull { it.id == linkedAnimalId }?.let { "${it.tagNumber} · ${it.name}" }.orEmpty(),
-                                onValueChange = {}, readOnly = true,
-                                label = { Text("Link to an animal (optional)") },
-                                placeholder = { Text("None (general task)") },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = animalExpanded) },
-                                modifier = Modifier.fillMaxWidth().menuAnchor(), shape = FarmUi.fieldShape, colors = FarmUi.textFieldColors()
-                            )
-                            ExposedDropdownMenu(expanded = animalExpanded, onDismissRequest = { animalExpanded = false }) {
-                                DropdownMenuItem(text = { Text("None (general task)") }, onClick = { linkedAnimalId = ""; animalExpanded = false })
-                                animals.forEach { animal ->
-                                    DropdownMenuItem(text = { Text("${animal.tagNumber} · ${animal.name.ifBlank { animal.breed }}") }, onClick = { linkedAnimalId = animal.id; animalExpanded = false })
-                                }
+                        ExposedDropdownMenu(expanded = categoryExpanded, onDismissRequest = { categoryExpanded = false }) {
+                            TaskCategory.values().forEach { cat ->
+                                DropdownMenuItem(
+                                    text = { Text(if (cat == TaskCategory.HEALTH) "Vaccination" else cat.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                                    onClick = { category = cat; categoryExpanded = false }
+                                )
                             }
                         }
+                    }
 
-                        ExposedDropdownMenuBox(
-                            expanded = categoryExpanded,
-                            onExpandedChange = { categoryExpanded = !categoryExpanded }
-                        ) {
-                            OutlinedTextField(
-                                value = category.name.lowercase().replaceFirstChar { it.uppercase() },
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text("Category") },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryExpanded) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor(),
-                                shape = FarmUi.fieldShape,
-                                colors = FarmUi.textFieldColors()
-                            )
-                            ExposedDropdownMenu(
-                                expanded = categoryExpanded,
-                                onDismissRequest = { categoryExpanded = false }
-                            ) {
-                                TaskCategory.values().forEach { cat ->
-                                    DropdownMenuItem(
-                                        text = { Text(cat.name.lowercase().replaceFirstChar { it.uppercase() }) },
-                                        onClick = {
-                                            category = cat
-                                            categoryExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        ExposedDropdownMenuBox(
-                            expanded = recurrenceExpanded,
-                            onExpandedChange = { recurrenceExpanded = !recurrenceExpanded }
-                        ) {
-                            OutlinedTextField(
-                                value = recurrence.name.lowercase().replaceFirstChar { it.uppercase() },
-                                onValueChange = {},
-                                readOnly = true,
-                                label = { Text("Recurrence") },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = recurrenceExpanded) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor(),
-                                shape = FarmUi.fieldShape,
-                                colors = FarmUi.textFieldColors()
-                            )
-                            ExposedDropdownMenu(
-                                expanded = recurrenceExpanded,
-                                onDismissRequest = { recurrenceExpanded = false }
-                            ) {
-                                Recurrence.values().forEach { rec ->
-                                    DropdownMenuItem(
-                                        text = { Text(rec.name.lowercase().replaceFirstChar { it.uppercase() }) },
-                                        onClick = {
-                                            recurrence = rec
-                                            recurrenceExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        FarmDatePickerField(
-                            label = "Due Date & Time",
-                            initialMillis = dueDateMillis,
-                            onDateSelected = { dueDateMillis = it }
+                    FarmFormLabel("Link to an animal (optional)")
+                    ExposedDropdownMenuBox(expanded = animalExpanded, onExpandedChange = { animalExpanded = !animalExpanded }) {
+                        OutlinedTextField(
+                            value = animals.firstOrNull { it.id == linkedAnimalId }?.let { "${it.tagNumber} · ${it.name}" }.orEmpty(),
+                            onValueChange = {}, readOnly = true,
+                            placeholder = { Text("None (general task)") },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = animalExpanded) },
+                            modifier = Modifier.fillMaxWidth().menuAnchor(), shape = FarmUi.fieldShape, colors = FarmUi.textFieldColors()
                         )
-
-                        if (onDelete != null) {
-                            Button(
-                                onClick = { showDeleteConfirm = true },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                colors = FarmUi.secondaryButtonColors()
-                            ) {
-                                Text("Delete Task")
+                        ExposedDropdownMenu(expanded = animalExpanded, onDismissRequest = { animalExpanded = false }) {
+                            DropdownMenuItem(text = { Text("None (general task)") }, onClick = { linkedAnimalId = ""; animalExpanded = false })
+                            animals.forEach { animal ->
+                                DropdownMenuItem(text = { Text("${animal.tagNumber} · ${animal.name.ifBlank { animal.breed }}") }, onClick = { linkedAnimalId = animal.id; animalExpanded = false })
                             }
+                        }
+                    }
+
+                    FarmDatePickerField(
+                        label = "Due Date & Time",
+                        initialMillis = dueDateMillis,
+                        includeTime = true,
+                        onDateSelected = { dueDateMillis = it }
+                    )
+
+                    FarmFormLabel("Repeat")
+                    ExposedDropdownMenuBox(
+                        expanded = recurrenceExpanded,
+                        onExpandedChange = { recurrenceExpanded = !recurrenceExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = recurrence.name.lowercase().replaceFirstChar { it.uppercase() },
+                            onValueChange = {},
+                            readOnly = true,
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = recurrenceExpanded) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .menuAnchor(),
+                            shape = FarmUi.fieldShape,
+                            colors = FarmUi.textFieldColors()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = recurrenceExpanded,
+                            onDismissRequest = { recurrenceExpanded = false }
+                        ) {
+                            Recurrence.values().forEach { rec ->
+                                DropdownMenuItem(
+                                    text = { Text(rec.name.lowercase().replaceFirstChar { it.uppercase() }) },
+                                    onClick = {
+                                        recurrence = rec
+                                        recurrenceExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    if (onDelete != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = { showDeleteConfirm = true },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = FarmUi.secondaryButtonColors()
+                        ) {
+                            Text("Delete Task")
                         }
                     }
                 }
@@ -241,40 +233,45 @@ fun AddEditTaskScreen(
         }
     }
 
-    // Deleting a task cannot be undone, so it is confirmed first.
     if (showDeleteConfirm && onDelete != null) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Delete task?") },
+            title = { Text("Delete task?", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error) },
             text = {
                 Text(
                     if (title.isNotBlank())
                         "\"$title\" will be permanently removed. This cannot be undone."
                     else
-                        "This task will be permanently removed. This cannot be undone."
+                        "This task will be permanently removed. This cannot be undone.",
+                    color = FarmUi.ink
                 )
             },
             confirmButton = {
-                TextButton(
+                Button(
                     onClick = {
                         showDeleteConfirm = false
                         onDelete()
-                    }
+                    },
+                    shape = RoundedCornerShape(24.dp),
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = Color.White
+                    )
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text("Delete", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancel")
+                    Text("Cancel", color = FarmUi.textMuted)
                 }
             },
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = FarmUi.dialogSurface,
+            shape = RoundedCornerShape(24.dp)
         )
     }
 }
 
-/** Midnight of the current day, in the device's own time zone. */
 private fun startOfTodayMillis(): Long = java.util.Calendar.getInstance().apply {
     set(java.util.Calendar.HOUR_OF_DAY, 0)
     set(java.util.Calendar.MINUTE, 0)

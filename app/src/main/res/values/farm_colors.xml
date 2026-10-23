@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        The launch screen background. Kept in sync with the launcher icon
+        background so the app opens straight into its own branding.
+    -->
+    <color name="farm_launch_background">#19462F</color>
+</resources>
