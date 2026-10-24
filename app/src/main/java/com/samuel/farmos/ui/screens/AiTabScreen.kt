@@ -379,8 +379,17 @@ fun AiTabScreen(
                             border = if (!isUser) BorderStroke(1.dp, assistantBubbleBorder) else null
                         ) {
                             Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+                                val displayText = if (!isUser) {
+                                    msg.text
+                                        .replace(Regex("""\*\*(.*?)\*\*"""), "$1")
+                                        .replace(Regex("""\*(.*?)\*"""), "$1")
+                                        .replace(Regex("""(?m)^#{1,6}\s*"""), "")
+                                        .replace(Regex("""(?m)^\*\s+"""), "• ")
+                                } else {
+                                    msg.text
+                                }
                                 Text(
-                                    text = msg.text,
+                                    text = displayText,
                                     style = MaterialTheme.typography.bodyMedium,
                                     fontSize = 15.sp,
                                     color = currentBubbleText

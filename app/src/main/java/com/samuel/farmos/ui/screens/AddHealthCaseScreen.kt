@@ -434,13 +434,13 @@ fun AddHealthCaseScreen(
                         Box(
                             modifier = Modifier
                                 .size(34.dp)
-                                .background(FarmUi.iconCoral, RoundedCornerShape(10.dp)),
+                                .background(FarmUi.iconTeal, RoundedCornerShape(10.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 Icons.Default.MedicalServices,
                                 contentDescription = null,
-                                tint = FarmUi.coral,
+                                tint = FarmUi.teal,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -471,10 +471,10 @@ fun AddHealthCaseScreen(
                                     selectedSigns = if (isSelected) selectedSigns - sign else selectedSigns + sign
                                 },
                                 shape = RoundedCornerShape(12.dp),
-                                color = if (isSelected) FarmUi.iconCoral else FarmUi.surfaceWarm,
+                                color = if (isSelected) FarmUi.iconTeal else FarmUi.surfaceWarm,
                                 border = BorderStroke(
                                     1.dp,
-                                    if (isSelected) FarmUi.coral else FarmUi.cardBorder
+                                    if (isSelected) FarmUi.teal else FarmUi.cardBorder
                                 )
                             ) {
                                 Row(
@@ -486,7 +486,7 @@ fun AddHealthCaseScreen(
                                         Icon(
                                             Icons.Default.Check,
                                             contentDescription = null,
-                                            tint = FarmUi.coral,
+                                            tint = FarmUi.teal,
                                             modifier = Modifier.size(16.dp)
                                         )
                                     }
@@ -494,7 +494,7 @@ fun AddHealthCaseScreen(
                                         text = formatClinicalSign(sign),
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                        color = if (isSelected) FarmUi.coral else FarmUi.ink
+                                        color = if (isSelected) FarmUi.teal else FarmUi.ink
                                     )
                                 }
                             }

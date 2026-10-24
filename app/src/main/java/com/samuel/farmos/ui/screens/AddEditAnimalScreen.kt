@@ -1,9 +1,9 @@
 package com.samuel.farmos.ui.screens
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,12 +12,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -26,8 +33,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,11 +51,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.samuel.farmos.data.Animal
@@ -59,12 +63,14 @@ import com.samuel.farmos.data.BreedSuggestions
 import com.samuel.farmos.data.Gender
 import com.samuel.farmos.data.Species
 import com.samuel.farmos.ui.components.FarmDatePickerField
+import com.samuel.farmos.ui.components.FarmDeleteButton
 import com.samuel.farmos.ui.theme.FarmOsTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddEditAnimalScreen(
     animal: Animal? = null,
+    existingAnimals: List<Animal> = emptyList(),
     onSave: (Animal) -> Unit,
     onDelete: (() -> Unit)? = null,
     onBack: () -> Unit
@@ -97,19 +103,38 @@ fun AddEditAnimalScreen(
     var statusExpanded by remember { mutableStateOf(false) }
 
     var tagNumberError by remember { mutableStateOf(false) }
+    var duplicateTagError by remember { mutableStateOf(false) }
     var weightError by remember { mutableStateOf(false) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
     var showSaveConfirm by remember { mutableStateOf(false) }
 
     val weightValue = weightKgText.toDoubleOrNull()
     val isWeightValid = weightKgText.isBlank() || (weightValue != null && weightValue > 0.0)
 
+    fun validateAndPrompt() {
+        val trimmedTag = tagNumber.trim()
+        tagNumberError = trimmedTag.isEmpty()
+        duplicateTagError = trimmedTag.isNotBlank() && existingAnimals.any {
+            it.tagNumber.equals(trimmedTag, ignoreCase = true) && it.id != (animal?.id ?: "")
+        }
+        weightError = !isWeightValid
+        if (tagNumberError || duplicateTagError || weightError) return
+        showSaveConfirm = true
+    }
+
     fun saveAnimal() {
-        onSave((animal ?: Animal()).copy(
-            tagNumber = tagNumber.trim(), name = name.trim(), species = species, breed = breed.trim(),
-            gender = gender, isCastrated = if (gender == Gender.MALE) isCastrated else null,
-            birthDate = birthDate, status = status, weightKg = weightValue
-        ))
+        onSave(
+            (animal ?: Animal()).copy(
+                tagNumber = tagNumber.trim(),
+                name = name.trim(),
+                species = species,
+                breed = breed.trim(),
+                gender = gender,
+                isCastrated = if (gender == Gender.MALE) isCastrated else null,
+                birthDate = birthDate,
+                status = status,
+                weightKg = weightValue
+            )
+        )
     }
 
     Scaffold(
@@ -122,13 +147,7 @@ fun AddEditAnimalScreen(
                     }
                 },
                 actions = {
-                    TextButton(onClick = {
-                        val trimmedTag = tagNumber.trim()
-                        tagNumberError = trimmedTag.isEmpty()
-                        weightError = !isWeightValid
-                        if (tagNumberError || weightError) return@TextButton
-                        showSaveConfirm = true
-                    }) {
+                    TextButton(onClick = ::validateAndPrompt) {
                         Text("Save", fontWeight = FontWeight.Bold, color = FarmUi.green)
                     }
                 },
@@ -146,119 +165,146 @@ fun AddEditAnimalScreen(
                 .imePadding(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Header Banner
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            listOf(Color(0xFF075C43), Color(0xFF009D8D))
+                        ),
+                        shape = RoundedCornerShape(22.dp)
+                    )
+                    .padding(horizontal = 18.dp, vertical = 20.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (animal == null) "Register Livestock 🐄" else "Edit Animal Details 📝",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = if (animal == null) "Add new animal to your farm inventory" else "Update tag, breed, weight & status",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color.White.copy(alpha = 0.9f)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Surface(
+                        color = Color.White.copy(alpha = 0.16f),
+                        shape = CircleShape
+                    ) {
+                        Box(
+                            modifier = Modifier.size(46.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Pets,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Section 1: Classification & ID
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
-                border = BorderStroke(1.dp, FarmUi.cardBorder)
+                border = BorderStroke(1.dp, FarmUi.teal.copy(alpha = 0.35f))
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
-                    FarmFormLabel("Species")
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        listOf(Species.COW to "🐄 Cow", Species.GOAT to "🐐 Goat", Species.SHEEP to "🐑 Sheep").forEach { (option, label) ->
-                            val selected = species == option
-                            val selectedBg = if (isSystemInDarkTheme()) Color(0xFF80E3A7) else Color(0xFF26733A)
-                            val selectedText = if (isSystemInDarkTheme()) Color(0xFF143820) else Color.White
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .background(FarmUi.iconTeal, RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Pets,
+                                contentDescription = null,
+                                tint = FarmUi.teal,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Livestock Identity",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = FarmUi.ink
+                        )
+                    }
 
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable(role = Role.Tab) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FarmFormLabel("Species")
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf(Species.COW to "🐄 Cow", Species.GOAT to "🐐 Goat", Species.SHEEP to "🐑 Sheep").forEach { (option, label) ->
+                                val isSelected = species == option
+                                Surface(
+                                    onClick = {
                                         species = option
                                         breed = ""
                                     },
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (selected) selectedBg else FarmUi.surface,
-                                border = BorderStroke(
-                                    1.dp,
-                                    if (selected) selectedBg else FarmUi.cardBorder
-                                )
-                            ) {
-                                Text(
-                                    text = label,
-                                    modifier = Modifier.padding(vertical = 10.dp),
-                                    color = if (selected) selectedText else FarmUi.ink,
-                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    textAlign = TextAlign.Center
-                                )
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = if (isSelected) FarmUi.iconMint else FarmUi.surfaceWarm,
+                                    border = BorderStroke(
+                                        1.dp,
+                                        if (isSelected) FarmUi.green else FarmUi.cardBorder
+                                    ),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Box(
+                                        modifier = Modifier.padding(vertical = 10.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = label,
+                                            color = if (isSelected) FarmUi.green else FarmUi.ink,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
 
-                    FarmFormLabel("Tag / ID Number *")
-                    OutlinedTextField(
-                        value = tagNumber,
-                        onValueChange = {
-                            tagNumber = it
-                            if (it.isNotBlank()) tagNumberError = false
-                        },
-                        placeholder = { Text("e.g. C-101 or EAR-042") },
-                        isError = tagNumberError,
-                        supportingText = if (tagNumberError) {
-                            { Text("Tag number is required") }
-                        } else null,
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = FarmUi.fieldShape,
-                        colors = FarmUi.textFieldColors()
-                    )
-
-                    FarmFormLabel("Name (optional)")
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it },
-                        placeholder = { Text("e.g. Bella, Daisy") },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = FarmUi.fieldShape,
-                        colors = FarmUi.textFieldColors()
-                    )
-
-                    FarmFormLabel("Breed")
-                    val breedOptions = BreedSuggestions.forSpecies(species)
-                    if (breedOptions.isNotEmpty()) {
-                        ExposedDropdownMenuBox(
-                            expanded = breedExpanded,
-                            onExpandedChange = { breedExpanded = !breedExpanded }
-                        ) {
-                            OutlinedTextField(
-                                value = breed,
-                                onValueChange = { breed = it },
-                                placeholder = { Text("Type or pick a breed") },
-                                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = breedExpanded) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .menuAnchor(),
-                                shape = FarmUi.fieldShape,
-                                colors = FarmUi.textFieldColors()
-                            )
-                            ExposedDropdownMenu(
-                                expanded = breedExpanded,
-                                onDismissRequest = { breedExpanded = false }
-                            ) {
-                                breedOptions.forEach { suggestion ->
-                                    DropdownMenuItem(
-                                        text = { Text(suggestion) },
-                                        onClick = {
-                                            breed = suggestion
-                                            breedExpanded = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-                    } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FarmFormLabel("Tag / ID Number *")
                         OutlinedTextField(
-                            value = breed,
-                            onValueChange = { breed = it },
-                            placeholder = { Text("Type or pick a breed") },
+                            value = tagNumber,
+                            onValueChange = {
+                                tagNumber = it
+                                if (it.isNotBlank()) {
+                                    tagNumberError = false
+                                    duplicateTagError = false
+                                }
+                            },
+                            placeholder = { Text("e.g. C-101 or EAR-042") },
+                            isError = tagNumberError || duplicateTagError,
+                            supportingText = if (tagNumberError) {
+                                { Text("Tag number is required") }
+                            } else if (duplicateTagError) {
+                                { Text("An animal with tag #${tagNumber.trim()} already exists") }
+                            } else null,
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true,
                             shape = FarmUi.fieldShape,
@@ -266,69 +312,209 @@ fun AddEditAnimalScreen(
                         )
                     }
 
-                    FarmFormLabel("Gender")
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Gender.values().forEach { option ->
-                            val selected = gender == option
-                            val selectedBg = if (isSystemInDarkTheme()) Color(0xFF80E3A7) else Color(0xFF26733A)
-                            val selectedText = if (isSystemInDarkTheme()) Color(0xFF143820) else Color.White
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FarmFormLabel("Name (optional)")
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            placeholder = { Text("e.g. Bella, Daisy") },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = FarmUi.fieldShape,
+                            colors = FarmUi.textFieldColors()
+                        )
+                    }
+                }
+            }
 
-                            Surface(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable(role = Role.Tab) {
+            // Section 2: Breed & Demographics
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
+                border = BorderStroke(1.dp, FarmUi.cardBorder)
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .background(FarmUi.iconWarm, RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Info,
+                                contentDescription = null,
+                                tint = FarmUi.amber,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Breed & Gender",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = FarmUi.ink
+                        )
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FarmFormLabel("Breed")
+                        val breedOptions = BreedSuggestions.forSpecies(species)
+                        if (breedOptions.isNotEmpty()) {
+                            ExposedDropdownMenuBox(
+                                expanded = breedExpanded,
+                                onExpandedChange = { breedExpanded = !breedExpanded }
+                            ) {
+                                OutlinedTextField(
+                                    value = breed,
+                                    onValueChange = { breed = it },
+                                    placeholder = { Text("Type or pick a breed") },
+                                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = breedExpanded) },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .menuAnchor(),
+                                    shape = FarmUi.fieldShape,
+                                    colors = FarmUi.textFieldColors()
+                                )
+                                ExposedDropdownMenu(
+                                    expanded = breedExpanded,
+                                    onDismissRequest = { breedExpanded = false }
+                                ) {
+                                    breedOptions.forEach { suggestion ->
+                                        DropdownMenuItem(
+                                            text = { Text(suggestion) },
+                                            onClick = {
+                                                breed = suggestion
+                                                breedExpanded = false
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        } else {
+                            OutlinedTextField(
+                                value = breed,
+                                onValueChange = { breed = it },
+                                placeholder = { Text("Type or pick a breed") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                shape = FarmUi.fieldShape,
+                                colors = FarmUi.textFieldColors()
+                            )
+                        }
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FarmFormLabel("Gender")
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf(Gender.FEMALE to "Female ♀", Gender.MALE to "Male ♂").forEach { (option, label) ->
+                                val isSelected = gender == option
+                                Surface(
+                                    onClick = {
                                         gender = option
                                         if (option == Gender.FEMALE) isCastrated = null
                                     },
-                                shape = RoundedCornerShape(12.dp),
-                                color = if (selected) selectedBg else FarmUi.surface,
-                                border = BorderStroke(1.dp, if (selected) selectedBg else FarmUi.cardBorder)
-                            ) {
-                                Text(
-                                    text = option.name.lowercase().replaceFirstChar { it.uppercase() },
-                                    modifier = Modifier.padding(vertical = 10.dp),
-                                    color = if (selected) selectedText else FarmUi.ink,
-                                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    textAlign = TextAlign.Center
-                                )
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = if (isSelected) FarmUi.iconPeach else FarmUi.surfaceWarm,
+                                    border = BorderStroke(
+                                        1.dp,
+                                        if (isSelected) FarmUi.orange else FarmUi.cardBorder
+                                    ),
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Box(
+                                        modifier = Modifier.padding(vertical = 10.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = label,
+                                            color = if (isSelected) FarmUi.orange else FarmUi.ink,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
 
                     if (gender == Gender.MALE) {
-                        FarmFormLabel("Castrated?")
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            listOf(false to "No", true to "Yes").forEach { (value, label) ->
-                                val selected = isCastrated == value
-                                val selectedBg = if (isSystemInDarkTheme()) Color(0xFF80E3A7) else Color(0xFF26733A)
-                                val selectedText = if (isSystemInDarkTheme()) Color(0xFF143820) else Color.White
-
-                                Surface(
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clickable(role = Role.Tab) { isCastrated = value },
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = if (selected) selectedBg else FarmUi.surface,
-                                    border = BorderStroke(1.dp, if (selected) selectedBg else FarmUi.cardBorder)
-                                ) {
-                                    Text(
-                                        text = label,
-                                        modifier = Modifier.padding(vertical = 10.dp),
-                                        color = if (selected) selectedText else FarmUi.ink,
-                                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        textAlign = TextAlign.Center
-                                    )
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FarmFormLabel("Castrated?")
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                listOf(false to "No", true to "Yes").forEach { (value, label) ->
+                                    val isSelected = isCastrated == value
+                                    Surface(
+                                        onClick = { isCastrated = value },
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = if (isSelected) FarmUi.iconPeach else FarmUi.surfaceWarm,
+                                        border = BorderStroke(
+                                            1.dp,
+                                            if (isSelected) FarmUi.orange else FarmUi.cardBorder
+                                        ),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.padding(vertical = 10.dp),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text(
+                                                text = label,
+                                                color = if (isSelected) FarmUi.orange else FarmUi.ink,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
+                    }
+                }
+            }
+
+            // Section 3: Birth & Weight
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
+                border = BorderStroke(1.dp, FarmUi.cardBorder)
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .background(FarmUi.iconBlue, RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.ShowChart,
+                                contentDescription = null,
+                                tint = FarmUi.navy,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Birth & Weight Records",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = FarmUi.ink
+                        )
                     }
 
                     FarmDatePickerField(
@@ -337,26 +523,63 @@ fun AddEditAnimalScreen(
                         onDateSelected = { birthDate = it }
                     )
 
-                    FarmFormLabel("Weight (kg)")
-                    OutlinedTextField(
-                        value = weightKgText,
-                        onValueChange = {
-                            weightKgText = it
-                            weightError = it.isNotBlank() && it.toDoubleOrNull() == null
-                        },
-                        placeholder = { Text("e.g. 350.5") },
-                        isError = weightError,
-                        supportingText = if (weightError) {
-                            { Text("Enter a valid number") }
-                        } else null,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true,
-                        shape = FarmUi.fieldShape,
-                        colors = FarmUi.textFieldColors()
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        FarmFormLabel("Weight (kg)")
+                        OutlinedTextField(
+                            value = weightKgText,
+                            onValueChange = {
+                                weightKgText = it
+                                weightError = it.isNotBlank() && it.toDoubleOrNull() == null
+                            },
+                            placeholder = { Text("e.g. 350.5") },
+                            isError = weightError,
+                            supportingText = if (weightError) {
+                                { Text("Enter a valid number") }
+                            } else null,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            shape = FarmUi.fieldShape,
+                            colors = FarmUi.textFieldColors()
+                        )
+                    }
+                }
+            }
 
-                    FarmFormLabel("Status")
+            // Section 4: Lifecycle Status
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
+                border = BorderStroke(1.dp, FarmUi.cardBorder)
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .background(FarmUi.iconMint, RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = FarmUi.green,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = "Animal Status",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = FarmUi.ink
+                        )
+                    }
+
                     ExposedDropdownMenuBox(
                         expanded = statusExpanded,
                         onExpandedChange = { statusExpanded = !statusExpanded }
@@ -387,19 +610,30 @@ fun AddEditAnimalScreen(
                             }
                         }
                     }
-
-                    if (onDelete != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(
-                            onClick = { showDeleteConfirm = true },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
-                            colors = FarmUi.secondaryButtonColors()
-                        ) {
-                            Text("Delete Animal")
-                        }
-                    }
                 }
+            }
+
+            // Primary Save Action Button
+            Button(
+                onClick = ::validateAndPrompt,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = FarmUi.buttonColors()
+            ) {
+                Text(
+                    text = if (animal == null) "Save Animal" else "Update Animal",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            if (animal != null && onDelete != null) {
+                FarmDeleteButton(
+                    description = "this animal record",
+                    onDelete = onDelete
+                )
             }
         }
     }
@@ -441,52 +675,25 @@ fun AddEditAnimalScreen(
             shape = RoundedCornerShape(24.dp)
         )
     }
-
-    if (showDeleteConfirm && onDelete != null) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            title = {
-                Text("Delete animal?", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
-            },
-            text = {
-                Text(
-                    if (tagNumber.isNotBlank())
-                        "This will permanently remove ${tagNumber.trim()} and its records. This cannot be undone."
-                    else
-                        "This will permanently remove this animal and its records. This cannot be undone.",
-                    color = FarmUi.ink
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showDeleteConfirm = false
-                        onDelete()
-                    },
-                    shape = RoundedCornerShape(24.dp),
-                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text("Delete", fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancel", color = FarmUi.textMuted)
-                }
-            },
-            containerColor = FarmUi.dialogSurface,
-            shape = RoundedCornerShape(24.dp)
-        )
-    }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun AddEditAnimalScreenPreview() {
     FarmOsTheme {
-        AddEditAnimalScreen(onSave = {}, onBack = {})
+        AddEditAnimalScreen(
+            animal = Animal(
+                id = "1",
+                tagNumber = "C-101",
+                name = "Bella",
+                species = Species.COW,
+                breed = "Friesian",
+                gender = Gender.FEMALE,
+                status = AnimalStatus.HEALTHY,
+                weightKg = 380.0
+            ),
+            onSave = {},
+            onBack = {}
+        )
     }
 }

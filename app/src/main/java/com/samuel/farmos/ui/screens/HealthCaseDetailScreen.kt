@@ -115,7 +115,7 @@ fun HealthCaseDetailScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
-                        border = BorderStroke(1.dp, FarmUi.coral.copy(alpha = 0.35f))
+                        border = BorderStroke(1.dp, FarmUi.teal.copy(alpha = 0.35f))
                     ) {
                         Column(modifier = Modifier.padding(18.dp)) {
                             Row(
@@ -125,13 +125,13 @@ fun HealthCaseDetailScreen(
                                 Box(
                                     modifier = Modifier
                                         .size(44.dp)
-                                        .background(FarmUi.iconCoral, RoundedCornerShape(14.dp)),
+                                        .background(FarmUi.iconTeal, RoundedCornerShape(14.dp)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
                                         Icons.Default.Favorite,
                                         contentDescription = null,
-                                        tint = FarmUi.coral,
+                                        tint = FarmUi.teal,
                                         modifier = Modifier.size(24.dp)
                                     )
                                 }
@@ -167,7 +167,7 @@ fun HealthCaseDetailScreen(
                                 )
 
                                 val statusColor = when (healthCase.status) {
-                                    HealthCaseStatus.ACTIVE -> FarmUi.coral
+                                    HealthCaseStatus.ACTIVE -> FarmUi.teal
                                     HealthCaseStatus.CRITICAL -> FarmUi.orange
                                     HealthCaseStatus.RECOVERED -> FarmUi.green
                                     HealthCaseStatus.CLOSED -> FarmUi.textMuted
@@ -275,13 +275,13 @@ fun HealthCaseDetailScreen(
                                     Box(
                                         modifier = Modifier
                                             .size(34.dp)
-                                            .background(FarmUi.iconCoral, RoundedCornerShape(10.dp)),
+                                            .background(FarmUi.iconTeal, RoundedCornerShape(10.dp)),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             Icons.Default.MedicalServices,
                                             contentDescription = null,
-                                            tint = FarmUi.coral,
+                                            tint = FarmUi.teal,
                                             modifier = Modifier.size(18.dp)
                                         )
                                     }
@@ -303,14 +303,14 @@ fun HealthCaseDetailScreen(
                                     healthCase.clinicalSigns.forEach { sign ->
                                         Surface(
                                             shape = RoundedCornerShape(10.dp),
-                                            color = FarmUi.iconCoral,
-                                            border = BorderStroke(1.dp, FarmUi.coral.copy(alpha = 0.3f))
+                                            color = FarmUi.iconTeal,
+                                            border = BorderStroke(1.dp, FarmUi.teal.copy(alpha = 0.3f))
                                         ) {
                                             Text(
                                                 text = sign.name.lowercase().replace('_', ' ').replaceFirstChar { it.uppercase() },
                                                 style = MaterialTheme.typography.bodySmall,
                                                 fontWeight = FontWeight.SemiBold,
-                                                color = FarmUi.coral,
+                                                color = FarmUi.teal,
                                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                                             )
                                         }

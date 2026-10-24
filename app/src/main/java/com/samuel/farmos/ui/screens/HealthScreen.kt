@@ -77,8 +77,8 @@ fun HealthScreen(
                 onClick = onAddCase,
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
                 text = { Text("Report Illness", fontWeight = FontWeight.Bold) },
-                containerColor = FarmUi.coral,
-                contentColor = if (isSystemInDarkTheme()) Color(0xFF520014) else Color.White,
+                containerColor = FarmUi.teal,
+                contentColor = if (isSystemInDarkTheme()) Color(0xFF1D3530) else Color.White,
                 shape = RoundedCornerShape(24.dp)
             )
         },
@@ -95,7 +95,7 @@ fun HealthScreen(
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                HealthCountCard("🔴 Active", active, Modifier.weight(1f))
+                HealthCountCard("⚡ Active", active, Modifier.weight(1f))
                 HealthCountCard("🟢 Resolved", resolved, Modifier.weight(1f))
             }
 
@@ -112,33 +112,34 @@ fun HealthScreen(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(cases, key = { it.id }) { healthCase ->
+                        val isActive = healthCase.status == HealthCaseStatus.ACTIVE
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable(role = Role.Button) { onCaseDetail(healthCase.id) },
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
-                            border = BorderStroke(1.dp, FarmUi.cardBorder)
+                            shape = RoundedCornerShape(18.dp),
+                            colors = CardDefaults.cardColors(containerColor = if (isActive) FarmUi.surfaceTeal else FarmUi.surface),
+                            border = BorderStroke(1.dp, if (isActive) FarmUi.teal.copy(alpha = 0.35f) else FarmUi.cardBorder)
                         ) {
-                            Column(Modifier.padding(16.dp)) {
+                            Column(Modifier.padding(18.dp)) {
                                 Row(
                                     Modifier.fillMaxWidth(),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .size(38.dp)
-                                            .background(FarmUi.iconCoral, RoundedCornerShape(12.dp)),
+                                            .size(42.dp)
+                                            .background(if (isActive) FarmUi.iconTeal else FarmUi.iconMint, RoundedCornerShape(14.dp)),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             Icons.Default.Favorite,
                                             contentDescription = null,
-                                            tint = FarmUi.coral,
-                                            modifier = Modifier.size(20.dp)
+                                            tint = if (isActive) FarmUi.teal else FarmUi.green,
+                                            modifier = Modifier.size(22.dp)
                                         )
                                     }
-                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Spacer(modifier = Modifier.width(14.dp))
                                     Column(modifier = Modifier.weight(1f)) {
                                         Text(
                                             text = healthCase.mainComplaint,
@@ -146,16 +147,16 @@ fun HealthScreen(
                                             style = MaterialTheme.typography.titleMedium,
                                             color = FarmUi.ink
                                         )
-                                        Spacer(Modifier.height(2.dp))
+                                        Spacer(Modifier.height(4.dp))
                                         val date = SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(healthCase.createdDateMillis))
                                         Text(
-                                            "Animal: ${healthCase.linkedAnimalId} · Logged: $date",
+                                            "Animal: ${healthCase.linkedAnimalId.ifBlank { "General" }} · Logged: $date",
                                             style = MaterialTheme.typography.bodySmall,
                                             color = FarmUi.textMuted
                                         )
                                     }
                                     Spacer(modifier = Modifier.width(8.dp))
-                                    val statusColor = if (healthCase.status == HealthCaseStatus.ACTIVE) FarmUi.coral else FarmUi.green
+                                    val statusColor = if (isActive) FarmUi.teal else FarmUi.green
                                     val statusBg = statusColor.copy(alpha = 0.16f)
                                     Surface(
                                         shape = RoundedCornerShape(8.dp),
@@ -166,7 +167,7 @@ fun HealthScreen(
                                             style = MaterialTheme.typography.labelSmall,
                                             fontWeight = FontWeight.Bold,
                                             color = statusColor,
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                                         )
                                     }
                                 }

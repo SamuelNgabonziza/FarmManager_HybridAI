@@ -23,3 +23,6 @@ key.properties
 *.log
 offline_properties.properties
 resolution-tracking-state.bin
+.kotlin/
+.android-local/
+

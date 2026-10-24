@@ -23,6 +23,7 @@ import com.samuel.farmos.data.SavedAiMessage
 import com.samuel.farmos.data.Task
 import com.samuel.farmos.data.TaskCategory
 import com.samuel.farmos.data.toUserMessage
+import com.samuel.farmos.notifications.TaskReminderScheduler
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -354,7 +355,10 @@ class FarmAiViewModel(application: Application) : AndroidViewModel(application) 
                     recurrence = Recurrence.NONE,
                     completed = false
                 )
-                farmRepository.addTask(uid, fid, newTask)
+                val taskId = farmRepository.addTask(uid, fid, newTask)
+                if (newTask.dueDateMillis > System.currentTimeMillis()) {
+                    TaskReminderScheduler.schedule(getApplication(), newTask.copy(id = taskId))
+                }
                 _taskDraft.value = null
             } catch (e: Exception) {
                 Log.e("FarmAiViewModel", "Failed to save draft task", e)

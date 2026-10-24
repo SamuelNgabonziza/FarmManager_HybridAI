@@ -1,5 +1,6 @@
 package com.samuel.farmos.ui.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -17,6 +18,7 @@ import com.samuel.farmos.data.HealthCaseStatus
 import com.samuel.farmos.data.ProductionRecord
 import com.samuel.farmos.data.SessionManager
 import com.samuel.farmos.data.Task
+import com.samuel.farmos.notifications.TaskReminderScheduler
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,7 +46,8 @@ import java.util.Calendar
 @OptIn(ExperimentalCoroutinesApi::class)
 class FarmViewModel(
     private val repository: FarmRepository,
-    private val sessionManager: SessionManager
+    private val sessionManager: SessionManager,
+    private val context: Context? = null
 ) : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
@@ -249,10 +252,18 @@ class FarmViewModel(
         val uid = currentUid() ?: return
         val farm = activeFarm() ?: return
         runCatching {
-            if (task.id.isBlank()) {
+            val taskId = if (task.id.isBlank()) {
                 repository.addTask(uid, farm.id, task)
             } else {
                 repository.updateTask(uid, farm.id, task)
+                task.id
+            }
+            context?.let { ctx ->
+                if (task.dueDateMillis > System.currentTimeMillis() && !task.completed) {
+                    TaskReminderScheduler.schedule(ctx, task.copy(id = taskId))
+                } else {
+                    TaskReminderScheduler.cancel(ctx, taskId)
+                }
             }
         }.onFailure { _errorMessage.value = "Could not save task: ${it.message}" }
     }
@@ -260,15 +271,29 @@ class FarmViewModel(
     suspend fun deleteTask(taskId: String) {
         val uid = currentUid() ?: return
         val farm = activeFarm() ?: return
-        runCatching { repository.deleteTask(uid, farm.id, taskId) }
-            .onFailure { _errorMessage.value = "Could not delete task: ${it.message}" }
+        runCatching {
+            repository.deleteTask(uid, farm.id, taskId)
+            context?.let { ctx ->
+                TaskReminderScheduler.cancel(ctx, taskId)
+            }
+        }.onFailure { _errorMessage.value = "Could not delete task: ${it.message}" }
     }
 
     suspend fun toggleTaskComplete(task: Task) {
         val uid = currentUid() ?: return
         val farm = activeFarm() ?: return
-        runCatching { repository.completeTask(uid, farm.id, task) }
-            .onFailure { _errorMessage.value = "Could not update task: ${it.message}" }
+        runCatching {
+            repository.completeTask(uid, farm.id, task)
+            context?.let { ctx ->
+                if (!task.completed) {
+                    // Task is now completed -> cancel reminder
+                    TaskReminderScheduler.cancel(ctx, task.id)
+                } else if (task.dueDateMillis > System.currentTimeMillis()) {
+                    // Task was uncompleted -> reschedule reminder
+                    TaskReminderScheduler.schedule(ctx, task.copy(completed = false))
+                }
+            }
+        }.onFailure { _errorMessage.value = "Could not update task: ${it.message}" }
     }
 
     suspend fun saveProduction(record: ProductionRecord) {
@@ -392,7 +417,7 @@ class FarmViewModel(
             initializer {
                 val application = this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]
                     ?: throw IllegalArgumentException("FarmViewModel requires the Application")
-                FarmViewModel(FarmRepository(), SessionManager(application))
+                FarmViewModel(FarmRepository(), SessionManager(application), application.applicationContext)
             }
         }
 

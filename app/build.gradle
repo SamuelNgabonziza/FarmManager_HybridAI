@@ -5,18 +5,28 @@ plugins {
     id 'com.google.gms.google-services'
 }
 
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { localProperties.load(it) }
+}
+
 // The Anthropic API key and base URL are supplied at build time rather than
 // being written into the source tree. A key baked into the APK can be
 // extracted by anyone who downloads it, so a production build should point
 // ANTHROPIC_BASE_URL at a proxy (a Firebase Cloud Function, for example)
 // that holds the key server-side and leave the key itself empty.
-def anthropicApiKey = project.findProperty("farmos.anthropicApiKey")
+def anthropicApiKey = localProperties.getProperty("farmos.anthropicApiKey")
+        ?: project.findProperty("farmos.anthropicApiKey")
         ?: System.getenv("ANTHROPIC_API_KEY")
         ?: ""
-def anthropicBaseUrl = project.findProperty("farmos.anthropicBaseUrl")
+def anthropicBaseUrl = localProperties.getProperty("farmos.anthropicBaseUrl")
+        ?: project.findProperty("farmos.anthropicBaseUrl")
         ?: System.getenv("ANTHROPIC_BASE_URL")
         ?: ""
-def geminiApiKey = project.findProperty("farmos.geminiApiKey")
+def geminiApiKey = localProperties.getProperty("farmos.geminiApiKey")
+        ?: localProperties.getProperty("GEMINI_API_KEY")
+        ?: project.findProperty("farmos.geminiApiKey")
         ?: System.getenv("GEMINI_API_KEY")
         ?: ""
 

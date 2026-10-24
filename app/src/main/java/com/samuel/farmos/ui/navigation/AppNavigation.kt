@@ -65,7 +65,10 @@ import java.util.Calendar
  *   the platform splash screen can be dismissed.
  */
 @Composable
-fun AppNavigation(onContentReady: () -> Unit = {}) {
+fun AppNavigation(
+    initialDestination: String? = null,
+    onContentReady: () -> Unit = {}
+) {
     val navController = rememberNavController()
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -76,6 +79,13 @@ fun AppNavigation(onContentReady: () -> Unit = {}) {
     val uid by farmViewModel.uid.collectAsStateWithLifecycle()
     val activeFarmId by farmViewModel.activeFarmId.collectAsStateWithLifecycle()
     val errorMessage by farmViewModel.errorMessage.collectAsStateWithLifecycle()
+
+    // Navigate to notification destination if triggered while app is running
+    LaunchedEffect(initialDestination) {
+        if (!initialDestination.isNullOrBlank()) {
+            navController.navigate(initialDestination)
+        }
+    }
 
     // The assistant must operate on the same farm the rest of the app is using.
     LaunchedEffect(uid, activeFarmId) {
@@ -106,8 +116,17 @@ fun AppNavigation(onContentReady: () -> Unit = {}) {
             composable(Routes.SPLASH) {
                 SplashScreen(
                     onFinished = { signedIn ->
-                        navController.navigate(if (signedIn) Routes.HOME else Routes.AUTH) {
-                            popUpTo(Routes.SPLASH) { inclusive = true }
+                        if (signedIn) {
+                            navController.navigate(Routes.HOME) {
+                                popUpTo(Routes.SPLASH) { inclusive = true }
+                            }
+                            if (!initialDestination.isNullOrBlank()) {
+                                navController.navigate(initialDestination)
+                            }
+                        } else {
+                            navController.navigate(Routes.AUTH) {
+                                popUpTo(Routes.SPLASH) { inclusive = true }
+                            }
                         }
                     }
                 )
@@ -277,7 +296,9 @@ fun AppNavigation(onContentReady: () -> Unit = {}) {
             }
 
             composable(Routes.ADD_ANIMAL) {
+                val animals by farmViewModel.animals.collectAsStateWithLifecycle()
                 AddEditAnimalScreen(
+                    existingAnimals = animals,
                     onSave = { animal ->
                         scope.launch {
                             farmViewModel.saveAnimal(animal)
@@ -297,6 +318,7 @@ fun AppNavigation(onContentReady: () -> Unit = {}) {
                 val animal = animals.firstOrNull { it.id == animalId }
                 AddEditAnimalScreen(
                     animal = animal,
+                    existingAnimals = animals,
                     onSave = { updated ->
                         scope.launch {
                             farmViewModel.saveAnimal(updated)
@@ -320,6 +342,7 @@ fun AppNavigation(onContentReady: () -> Unit = {}) {
                     onAddTask = { navController.navigate(Routes.ADD_TASK) },
                     onEditTask = { id -> navController.navigate(Routes.editTask(id)) },
                     onToggleTaskComplete = { task -> scope.launch { farmViewModel.toggleTaskComplete(task) } },
+                    onDeleteTask = { id -> scope.launch { farmViewModel.deleteTask(id) } },
                     onBack = { navController.popBackStack() }
                 )
             }
