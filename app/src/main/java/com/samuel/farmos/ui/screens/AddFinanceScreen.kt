@@ -83,10 +83,10 @@ fun AddFinanceScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add Finance Record", fontWeight = FontWeight.Bold) },
+                title = { Text("Add Finance Record", fontWeight = FontWeight.Bold, color = FarmUi.green) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FarmUi.green)
                     }
                 },
                 actions = {

@@ -1,6 +1,7 @@
 package com.samuel.farmos.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,12 +13,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -101,23 +105,36 @@ fun BreedingScreen(
                             Column(modifier = Modifier.padding(16.dp)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = record.eventType.name,
-                                        fontWeight = FontWeight.Bold,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = FarmUi.purple,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    val dateStr = SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(record.eventDateMillis))
-                                    Text(
-                                        text = dateStr,
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = FarmUi.textMuted,
-                                        modifier = Modifier.padding(end = 8.dp)
-                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(38.dp)
+                                            .background(FarmUi.iconLavender, RoundedCornerShape(12.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.CalendarMonth,
+                                            contentDescription = null,
+                                            tint = FarmUi.purple,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = record.eventType.name,
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = FarmUi.purple
+                                        )
+                                        val dateStr = SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(record.eventDateMillis))
+                                        Text(
+                                            text = dateStr,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = FarmUi.textMuted
+                                        )
+                                    }
                                     FarmDeleteButton(
                                         description = "${record.eventType.name} record",
                                         onDelete = { onDeleteRecord(record.id) }
@@ -125,7 +142,7 @@ fun BreedingScreen(
                                 }
 
                                 if (record.notes.isNotBlank()) {
-                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
                                     Text(
                                         text = "Notes: ${record.notes}",
                                         style = MaterialTheme.typography.bodyMedium,
@@ -138,5 +155,31 @@ fun BreedingScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun BreedingScreenPreview() {
+    FarmOsTheme {
+        BreedingScreen(
+            records = listOf(
+                BreedingRecord(
+                    id = "1",
+                    eventType = BreedingEventType.INSEMINATION,
+                    eventDateMillis = System.currentTimeMillis(),
+                    notes = "Artificial insemination with Guernsey sire."
+                ),
+                BreedingRecord(
+                    id = "2",
+                    eventType = BreedingEventType.PREGNANCY_CHECK,
+                    eventDateMillis = System.currentTimeMillis() - 86400000L * 30,
+                    notes = "Confirmed pregnant by vet."
+                )
+            ),
+            onAddRecord = {},
+            onDeleteRecord = {},
+            onBack = {}
+        )
     }
 }

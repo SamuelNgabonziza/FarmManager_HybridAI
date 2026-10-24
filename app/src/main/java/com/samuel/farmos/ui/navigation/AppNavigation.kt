@@ -518,7 +518,9 @@ fun AppNavigation(onContentReady: () -> Unit = {}) {
                 val messages by aiViewModel.messages.collectAsStateWithLifecycle()
                 val isLoading by aiViewModel.isLoading.collectAsStateWithLifecycle()
                 val savedChats by aiViewModel.savedChats.collectAsStateWithLifecycle()
+                val currentFarmName by farmViewModel.currentFarmName.collectAsStateWithLifecycle()
                 AiTabScreen(
+                    farmName = currentFarmName,
                     messages = messages,
                     savedChats = savedChats,
                     isLoading = isLoading,

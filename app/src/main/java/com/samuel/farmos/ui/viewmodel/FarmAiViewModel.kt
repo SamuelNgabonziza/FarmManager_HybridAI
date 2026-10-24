@@ -68,10 +68,19 @@ class FarmAiViewModel(application: Application) : AndroidViewModel(application) 
     private val farmAiContextRepository = FarmAiContextRepository(db)
     private val prefs = application.getSharedPreferences("farm_ai_prefs", Context.MODE_PRIVATE)
 
+    companion object {
+        /**
+         * Fallback embedded Gemini API Key. Paste your key here if you want it built directly into the app
+         * so all users can use the AI assistant without entering an API key themselves.
+         */
+        const val DEFAULT_EMBEDDED_GEMINI_KEY = ""
+    }
+
     private fun createAiService(): FarmAiService {
         val customGeminiKey = prefs.getString("gemini_api_key", null)?.takeIf { it.isNotBlank() }
         val buildGeminiKey = BuildConfig.GEMINI_API_KEY.takeIf { it.isNotBlank() }
-        val geminiKey = customGeminiKey ?: buildGeminiKey ?: ""
+        val embeddedKey = DEFAULT_EMBEDDED_GEMINI_KEY.takeIf { it.isNotBlank() }
+        val geminiKey = customGeminiKey ?: buildGeminiKey ?: embeddedKey ?: ""
         return GeminiFarmAiService(apiKey = geminiKey)
     }
 
@@ -83,7 +92,9 @@ class FarmAiViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun getGeminiApiKey(): String =
-        prefs.getString("gemini_api_key", "") ?: BuildConfig.GEMINI_API_KEY
+        prefs.getString("gemini_api_key", null)?.takeIf { it.isNotBlank() }
+            ?: BuildConfig.GEMINI_API_KEY.takeIf { it.isNotBlank() }
+            ?: DEFAULT_EMBEDDED_GEMINI_KEY
 
     private var userId: String? = FirebaseAuth.getInstance().currentUser?.uid
     private var farmId: String? = null

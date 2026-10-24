@@ -1,5 +1,6 @@
 package com.samuel.farmos.ui.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,7 +24,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -129,6 +134,48 @@ fun AnimalsListScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 4.dp),
+                shape = FarmUi.cardShape,
+                colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
+                border = BorderStroke(1.dp, FarmUi.cardBorder)
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .background(FarmUi.iconTeal, RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Pets,
+                            contentDescription = null,
+                            tint = FarmUi.teal,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Livestock Registry",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = FarmUi.ink
+                        )
+                        Text(
+                            "${animals.size} registered across all species",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = FarmUi.textMuted
+                        )
+                    }
+                }
+            }
+
             // Species filter pills
             Row(
                 modifier = Modifier
@@ -152,7 +199,7 @@ fun AnimalsListScreen(
                             .clickable(role = Role.Tab) { selectedSpecies = if (selected) null else species },
                         shape = RoundedCornerShape(16.dp),
                         color = if (selected) selectedBg else FarmUi.surface,
-                        border = androidx.compose.foundation.BorderStroke(
+                        border = BorderStroke(
                             1.dp,
                             if (selected) selectedBg else FarmUi.cardBorder
                         )

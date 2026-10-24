@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -49,34 +50,40 @@ fun SplashScreen(onFinished: (signedIn: Boolean) -> Unit) {
         onFinished(resolved ?: (FirebaseAuth.getInstance().currentUser != null))
     }
 
-    Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF00664D)) {
+    Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF0D5E4A)) {
         Box(
-            modifier = Modifier.fillMaxSize().background(
-                Brush.verticalGradient(listOf(Color(0xFF005B45), Color(0xFF007C5A), Color(0xFF008463)))
-            ),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFF0D5E4A)),
             contentAlignment = Alignment.Center
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
                 Box(
-                    modifier = Modifier.size(118.dp).background(Color(0xFF2B907A), CircleShape),
+                    modifier = Modifier
+                        .size(104.dp)
+                        .background(Color(0xFF287864), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "\uD83C\uDF3E", fontSize = 58.sp)
+                    Text(text = "🌾", fontSize = 52.sp)
                 }
-                Box(Modifier.height(48.dp))
+                Spacer(modifier = Modifier.height(32.dp))
                 Text(
                     text = "FarmOS",
                     style = MaterialTheme.typography.headlineLarge,
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
                     color = Color.White
                 )
-                Box(Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = "Modern Farm Management",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontSize = 28.sp,
-                    color = Color(0xFFE5F1EA)
+                    style = MaterialTheme.typography.titleMedium,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Normal,
+                    color = Color(0xFFE2F0EA)
                 )
             }
         }

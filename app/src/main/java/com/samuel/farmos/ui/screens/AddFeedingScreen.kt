@@ -76,10 +76,10 @@ fun AddFeedingScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add Feeding Record", fontWeight = FontWeight.Bold) },
+                title = { Text("Add Feeding Record", fontWeight = FontWeight.Bold, color = FarmUi.green) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FarmUi.green)
                     }
                 },
                 actions = {

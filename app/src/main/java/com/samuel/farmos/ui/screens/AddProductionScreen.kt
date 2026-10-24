@@ -86,8 +86,8 @@ fun AddProductionScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (type == ProductionType.MILK) "Add Milk Record" else "Add Weight Record", fontWeight = FontWeight.Bold) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back") } },
+                title = { Text(if (type == ProductionType.MILK) "Add Milk Record" else "Add Weight Record", fontWeight = FontWeight.Bold, color = FarmUi.green) },
+                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FarmUi.green) } },
                 actions = {
                     TextButton(onClick = ::save, enabled = canSave) {
                         Text("Save", fontWeight = FontWeight.Bold, color = if (canSave) FarmUi.green else FarmUi.textMuted)

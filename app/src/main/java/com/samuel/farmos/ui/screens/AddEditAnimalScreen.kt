@@ -115,10 +115,10 @@ fun AddEditAnimalScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (animal == null) "Add Animal" else "Edit Animal", fontWeight = FontWeight.Bold) },
+                title = { Text(if (animal == null) "Add Animal" else "Edit Animal", fontWeight = FontWeight.Bold, color = FarmUi.green) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FarmUi.green)
                     }
                 },
                 actions = {
@@ -480,5 +480,13 @@ fun AddEditAnimalScreen(
             containerColor = FarmUi.dialogSurface,
             shape = RoundedCornerShape(24.dp)
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun AddEditAnimalScreenPreview() {
+    FarmOsTheme {
+        AddEditAnimalScreen(onSave = {}, onBack = {})
     }
 }

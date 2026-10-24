@@ -162,5 +162,27 @@ fun FeedingScreen(
 @Preview(showBackground = true)
 @Composable
 private fun FeedingScreenPreview() {
-    FarmOsTheme { FeedingScreen(emptyList(), {}, {}, {}) }
+    FarmOsTheme {
+        FeedingScreen(
+            records = listOf(
+                com.samuel.farmos.data.FeedingRecord(
+                    id = "1",
+                    feedType = "Dairy Meal & Silage",
+                    quantityKg = 25.0,
+                    costUgx = 45000.0,
+                    dateMillis = System.currentTimeMillis()
+                ),
+                com.samuel.farmos.data.FeedingRecord(
+                    id = "2",
+                    feedType = "Hay & Mineral Lick",
+                    quantityKg = 15.0,
+                    costUgx = 20000.0,
+                    dateMillis = System.currentTimeMillis() - 86400000L
+                )
+            ),
+            onAddRecord = {},
+            onDeleteRecord = {},
+            onBack = {}
+        )
+    }
 }

@@ -1,6 +1,7 @@
 package com.samuel.farmos.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -13,12 +14,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -119,16 +123,38 @@ fun HealthScreen(
                             Column(Modifier.padding(16.dp)) {
                                 Row(
                                     Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(
-                                        text = healthCase.mainComplaint,
-                                        modifier = Modifier.weight(1f),
-                                        fontWeight = FontWeight.Bold,
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = FarmUi.ink
-                                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .size(38.dp)
+                                            .background(FarmUi.iconCoral, RoundedCornerShape(12.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            Icons.Default.Favorite,
+                                            contentDescription = null,
+                                            tint = FarmUi.coral,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = healthCase.mainComplaint,
+                                            fontWeight = FontWeight.Bold,
+                                            style = MaterialTheme.typography.titleMedium,
+                                            color = FarmUi.ink
+                                        )
+                                        Spacer(Modifier.height(2.dp))
+                                        val date = SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(healthCase.createdDateMillis))
+                                        Text(
+                                            "Animal: ${healthCase.linkedAnimalId} · Logged: $date",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = FarmUi.textMuted
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     val statusColor = if (healthCase.status == HealthCaseStatus.ACTIVE) FarmUi.coral else FarmUi.green
                                     val statusBg = statusColor.copy(alpha = 0.16f)
                                     Surface(
@@ -144,13 +170,6 @@ fun HealthScreen(
                                         )
                                     }
                                 }
-                                Spacer(Modifier.height(4.dp))
-                                val date = SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(healthCase.createdDateMillis))
-                                Text(
-                                    "Animal: ${healthCase.linkedAnimalId} · Logged: $date",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = FarmUi.textMuted
-                                )
                             }
                         }
                     }
@@ -183,5 +202,25 @@ private fun HealthCountCard(title: String, count: Int, modifier: Modifier) {
 @Preview(showBackground = true)
 @Composable
 private fun HealthScreenPreview() {
-    FarmOsTheme { HealthScreen(emptyList(), {}, {}, {}) }
+    FarmOsTheme {
+        HealthScreen(
+            cases = listOf(
+                HealthCase(
+                    id = "1",
+                    mainComplaint = "Mild fever & loss of appetite",
+                    status = HealthCaseStatus.ACTIVE,
+                    createdDateMillis = System.currentTimeMillis()
+                ),
+                HealthCase(
+                    id = "2",
+                    mainComplaint = "Lameness in hind leg",
+                    status = HealthCaseStatus.RECOVERED,
+                    createdDateMillis = System.currentTimeMillis() - 86400000L * 5
+                )
+            ),
+            onAddCase = {},
+            onCaseDetail = {},
+            onBack = {}
+        )
+    }
 }

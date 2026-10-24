@@ -91,10 +91,10 @@ fun AddEditTaskScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (task == null) "Add Task" else "Edit Task", fontWeight = FontWeight.Bold) },
+                title = { Text(if (task == null) "Add Task" else "Edit Task", fontWeight = FontWeight.Bold, color = FarmUi.green) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FarmUi.green)
                     }
                 },
                 actions = {

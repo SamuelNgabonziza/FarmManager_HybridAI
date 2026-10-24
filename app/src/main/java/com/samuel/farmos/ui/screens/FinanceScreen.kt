@@ -34,11 +34,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.samuel.farmos.data.FinanceCategory
 import com.samuel.farmos.data.FinanceRecord
 import com.samuel.farmos.data.FinanceType
 import com.samuel.farmos.ui.components.FarmDeleteButton
+import com.samuel.farmos.ui.theme.FarmOsTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -187,5 +190,35 @@ fun FinanceScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun FinanceScreenPreview() {
+    FarmOsTheme {
+        FinanceScreen(
+            records = listOf(
+                FinanceRecord(
+                    id = "1",
+                    type = FinanceType.INCOME,
+                    category = FinanceCategory.MILK_SALES,
+                    amountUgx = 450000.0,
+                    description = "Sold 150L milk to dairy cooperative",
+                    dateMillis = System.currentTimeMillis()
+                ),
+                FinanceRecord(
+                    id = "2",
+                    type = FinanceType.EXPENSE,
+                    category = FinanceCategory.FEED,
+                    amountUgx = 180000.0,
+                    description = "Bought 5 bags of dairy meal feed",
+                    dateMillis = System.currentTimeMillis() - 86400000L * 2
+                )
+            ),
+            onAddRecord = {},
+            onDeleteRecord = {},
+            onBack = {}
+        )
     }
 }

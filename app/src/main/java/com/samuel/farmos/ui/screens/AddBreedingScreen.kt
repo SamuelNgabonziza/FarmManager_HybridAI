@@ -63,10 +63,10 @@ fun AddBreedingScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Add Breeding Event", fontWeight = FontWeight.Bold) },
+                title = { Text("Add Breeding Event", fontWeight = FontWeight.Bold, color = FarmUi.green) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FarmUi.green)
                     }
                 },
                 actions = {
