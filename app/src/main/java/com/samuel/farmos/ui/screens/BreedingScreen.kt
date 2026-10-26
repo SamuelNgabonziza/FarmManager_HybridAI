@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.dp
 import com.samuel.farmos.data.BreedingEventType
 import com.samuel.farmos.data.BreedingRecord
 import com.samuel.farmos.ui.components.FarmDeleteButton
+import com.samuel.farmos.ui.components.GestationProgressRing
 import com.samuel.farmos.ui.theme.FarmOsTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -148,6 +149,41 @@ fun BreedingScreen(
                                         style = MaterialTheme.typography.bodyMedium,
                                         color = FarmUi.ink
                                     )
+                                }
+
+                                if (record.expectedDueDateMillis != null) {
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    val dueDate = record.expectedDueDateMillis
+                                    val now = System.currentTimeMillis()
+                                    val total = (dueDate - record.eventDateMillis).coerceAtLeast(1L)
+                                    val elapsed = (now - record.eventDateMillis).coerceAtLeast(0L)
+                                    val progress = (elapsed.toFloat() / total).coerceIn(0f, 1f)
+                                    val daysRemaining = java.util.concurrent.TimeUnit.MILLISECONDS.toDays(dueDate - now)
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .background(FarmUi.iconLavender.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                                            .padding(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        GestationProgressRing(progress = progress, daysLeft = daysRemaining, size = 44.dp)
+                                        Spacer(Modifier.width(12.dp))
+                                        Column {
+                                            Text(
+                                                text = if (daysRemaining <= 0) "Birth is due!" else "$daysRemaining days until expected birth",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (daysRemaining <= 7) FarmUi.coral else FarmUi.purple
+                                            )
+                                            val dueStr = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault()).format(Date(dueDate))
+                                            Text(
+                                                text = "Target due date: $dueStr",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = FarmUi.textMuted
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }

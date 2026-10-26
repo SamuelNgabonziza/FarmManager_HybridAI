@@ -3,4 +3,10 @@
     <files-path
         name="image_provider_images"
         path="image_provider/"/>
+    <cache-path
+        name="shared_docs"
+        path="."/>
+    <files-path
+        name="shared_files"
+        path="."/>
 </paths>

@@ -44,6 +44,15 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
+import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.samuel.farmos.ui.components.FeedRationCalculatorView
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,36 +69,85 @@ fun FeedingScreen(
     val fedToday = records.filter { it.dateMillis >= todayStart }.sumOf { it.quantityKg }
 
     val feedingCardBg = if (isSystemInDarkTheme()) Color(0xFF255D36) else Color(0xFF26733A)
+    var selectedTab by remember { mutableIntStateOf(0) }
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text("Feeding", fontWeight = FontWeight.Bold, color = FarmUi.green) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FarmUi.green)
+            Column {
+                TopAppBar(
+                    title = { Text("Feeding & Nutrition", fontWeight = FontWeight.Bold, color = FarmUi.green) },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FarmUi.green)
+                        }
+                    },
+                    colors = FarmUi.topAppBarColors()
+                )
+                TabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = Color.Transparent,
+                    contentColor = FarmUi.green,
+                    indicator = { tabPositions ->
+                        TabRowDefaults.SecondaryIndicator(
+                            modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                            color = FarmUi.green
+                        )
                     }
-                },
-                colors = FarmUi.topAppBarColors()
-            )
+                ) {
+                    Tab(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        text = {
+                            Text(
+                                "Feed Logs",
+                                fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Normal,
+                                color = if (selectedTab == 0) FarmUi.green else FarmUi.textMuted
+                            )
+                        }
+                    )
+                    Tab(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        text = {
+                            Text(
+                                "Ration Calculator",
+                                fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Normal,
+                                color = if (selectedTab == 1) FarmUi.green else FarmUi.textMuted
+                            )
+                        }
+                    )
+                }
+            }
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onAddRecord,
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Log Feed", fontWeight = FontWeight.Bold) },
-                containerColor = FarmUi.green,
-                contentColor = if (isSystemInDarkTheme()) Color(0xFF143820) else Color.White,
-                shape = RoundedCornerShape(24.dp)
-            )
+            if (selectedTab == 0) {
+                ExtendedFloatingActionButton(
+                    onClick = onAddRecord,
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text("Log Feed", fontWeight = FontWeight.Bold) },
+                    containerColor = FarmUi.green,
+                    contentColor = if (isSystemInDarkTheme()) Color(0xFF143820) else Color.White,
+                    shape = RoundedCornerShape(24.dp)
+                )
+            }
         },
         containerColor = FarmUi.background
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 96.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+        if (selectedTab == 1) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                item {
+                    FeedRationCalculatorView()
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 96.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -157,6 +215,7 @@ fun FeedingScreen(
             }
         }
     }
+}
 }
 
 @Preview(showBackground = true)

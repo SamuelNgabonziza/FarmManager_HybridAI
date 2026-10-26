@@ -13,21 +13,56 @@ import com.samuel.farmos.R
 import com.samuel.farmos.ui.navigation.Routes
 
 object NotificationHelper {
-    private const val CHANNEL_ID = "task_reminders"
+    private const val CHANNEL_TASKS = "task_reminders"
+    private const val CHANNEL_MILKING = "milking_reminders"
+    private const val CHANNEL_BREEDING = "breeding_reminders"
+    private const val CHANNEL_HEALTH = "health_reminders"
 
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
+            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+            val taskChannel = NotificationChannel(
+                CHANNEL_TASKS,
                 "Farm Task Reminders",
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "Reminders for farm tasks like feeding, milking, vaccinations"
+                description = "Reminders for scheduled daily farm tasks"
                 enableVibration(true)
                 setShowBadge(true)
             }
-            val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.createNotificationChannel(channel)
+
+            val milkingChannel = NotificationChannel(
+                CHANNEL_MILKING,
+                "Milking Reminders",
+                NotificationManager.IMPORTANCE_DEFAULT
+            ).apply {
+                description = "Morning and evening milking reminders"
+                enableVibration(true)
+                setShowBadge(true)
+            }
+
+            val breedingChannel = NotificationChannel(
+                CHANNEL_BREEDING,
+                "Calving & Breeding Alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Upcoming birth and heat cycle countdown alerts"
+                enableVibration(true)
+                setShowBadge(true)
+            }
+
+            val healthChannel = NotificationChannel(
+                CHANNEL_HEALTH,
+                "Health & Vaccine Alerts",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Reminders for medical treatments and booster vaccines"
+                enableVibration(true)
+                setShowBadge(true)
+            }
+
+            manager.createNotificationChannels(listOf(taskChannel, milkingChannel, breedingChannel, healthChannel))
         }
     }
 
@@ -38,12 +73,81 @@ object NotificationHelper {
         message: String,
         taskId: String? = null
     ) {
-        // Explicit intent to open MainActivity and navigate directly to the Tasks screen
+        showNotification(
+            context = context,
+            channelId = CHANNEL_TASKS,
+            notificationId = notificationId,
+            title = title,
+            message = message,
+            destination = Routes.TASKS_LIST,
+            extraKey = "taskId",
+            extraValue = taskId
+        )
+    }
+
+    fun showMilkingAlert(
+        context: Context,
+        notificationId: Int = 1001,
+        title: String = "Milking Time 🥛",
+        message: String = "Time to record today's milk yield in FarmOS."
+    ) {
+        showNotification(
+            context = context,
+            channelId = CHANNEL_MILKING,
+            notificationId = notificationId,
+            title = title,
+            message = message,
+            destination = Routes.PRODUCTION_LIST
+        )
+    }
+
+    fun showBreedingAlert(
+        context: Context,
+        notificationId: Int,
+        title: String,
+        message: String
+    ) {
+        showNotification(
+            context = context,
+            channelId = CHANNEL_BREEDING,
+            notificationId = notificationId,
+            title = title,
+            message = message,
+            destination = Routes.BREEDING_LIST
+        )
+    }
+
+    fun showHealthAlert(
+        context: Context,
+        notificationId: Int,
+        title: String,
+        message: String
+    ) {
+        showNotification(
+            context = context,
+            channelId = CHANNEL_HEALTH,
+            notificationId = notificationId,
+            title = title,
+            message = message,
+            destination = Routes.HEALTH_LIST
+        )
+    }
+
+    private fun showNotification(
+        context: Context,
+        channelId: String,
+        notificationId: Int,
+        title: String,
+        message: String,
+        destination: String,
+        extraKey: String? = null,
+        extraValue: String? = null
+    ) {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            putExtra("destination", Routes.TASKS_LIST)
-            if (taskId != null) {
-                putExtra("taskId", taskId)
+            putExtra("destination", destination)
+            if (extraKey != null && extraValue != null) {
+                putExtra(extraKey, extraValue)
             }
         }
 
@@ -54,7 +158,7 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(message)

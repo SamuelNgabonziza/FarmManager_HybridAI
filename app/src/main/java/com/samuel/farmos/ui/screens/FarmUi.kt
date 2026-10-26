@@ -43,7 +43,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.samuel.farmos.R
 import com.samuel.farmos.data.Task
+import com.samuel.farmos.ui.components.GestationProgressRing
+import com.samuel.farmos.ui.components.TaskCompletionCelebration
 import com.samuel.farmos.ui.theme.FarmGreen
+import com.samuel.farmos.ui.components.GestationProgressRing
+import com.samuel.farmos.ui.components.TaskCompletionCelebration
 import com.samuel.farmos.ui.theme.FarmGreenDark
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -184,24 +188,10 @@ fun TodayOnFarmCard(
         )
 
         if (tasks.isEmpty() && activeHealthCaseCount == 0 && birthsDueSoonCount == 0) {
-            Card(
-                shape = FarmUi.cardShape,
-                colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
-                border = BorderStroke(1.dp, FarmUi.cardBorder)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "No urgent items. You're all caught up.",
-                        color = FarmUi.textMuted,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
+            TaskCompletionCelebration(
+                message = "All farm chores done for today! 🎉",
+                subtitle = "No urgent items. Your farm is all caught up."
+            )
         }
 
         tasks.forEach { task ->
@@ -320,15 +310,24 @@ fun TodayOnFarmCard(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "🍼 $birthsDueSoonCount expected birth$plural in the next 7 days",
-                        color = FarmUi.purple,
-                        fontWeight = FontWeight.SemiBold,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    GestationProgressRing(progress = 0.92f, daysLeft = 4, size = 38.dp, strokeWidth = 3.5.dp)
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            text = "🍼 $birthsDueSoonCount expected birth$plural due soon",
+                            color = FarmUi.purple,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "Tap to check breeding due dates",
+                            color = FarmUi.textMuted,
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
                 }
             }
         }

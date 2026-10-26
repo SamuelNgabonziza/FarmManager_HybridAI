@@ -24,9 +24,14 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Pets
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShowChart
+import androidx.compose.ui.platform.LocalContext
+import com.samuel.farmos.util.FarmPdfExporter
+import com.samuel.farmos.util.FarmShareUtils
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenuItem
@@ -106,6 +111,8 @@ fun AddEditAnimalScreen(
     var duplicateTagError by remember { mutableStateOf(false) }
     var weightError by remember { mutableStateOf(false) }
     var showSaveConfirm by remember { mutableStateOf(false) }
+    var showShareDialog by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     val weightValue = weightKgText.toDoubleOrNull()
     val isWeightValid = weightKgText.isBlank() || (weightValue != null && weightValue > 0.0)
@@ -147,6 +154,11 @@ fun AddEditAnimalScreen(
                     }
                 },
                 actions = {
+                    if (animal != null) {
+                        IconButton(onClick = { showShareDialog = true }) {
+                            Icon(Icons.Default.Share, contentDescription = "Share with Vet", tint = FarmUi.green)
+                        }
+                    }
                     TextButton(onClick = ::validateAndPrompt) {
                         Text("Save", fontWeight = FontWeight.Bold, color = FarmUi.green)
                     }
@@ -669,6 +681,74 @@ fun AddEditAnimalScreen(
             dismissButton = {
                 TextButton(onClick = { showSaveConfirm = false }) {
                     Text("Cancel", color = FarmUi.textMuted)
+                }
+            },
+            containerColor = FarmUi.dialogSurface,
+            shape = RoundedCornerShape(24.dp)
+        )
+    }
+
+    if (showShareDialog && animal != null) {
+        AlertDialog(
+            onDismissRequest = { showShareDialog = false },
+            title = {
+                Text(
+                    "Share Animal Record 🩺",
+                    fontWeight = FontWeight.Bold,
+                    color = FarmUi.green
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Export a verified medical passport or quick summary for animal #${animal.tagNumber}.",
+                        color = FarmUi.ink
+                    )
+                    Button(
+                        onClick = {
+                            showShareDialog = false
+                            val uri = FarmPdfExporter.generateAnimalPassportPdf(
+                                context = context,
+                                farmName = "FarmOS",
+                                animal = animal,
+                                healthHistory = emptyList()
+                            )
+                            if (uri != null) {
+                                FarmShareUtils.sharePdf(context, uri, "Share Animal Passport #${animal.tagNumber}")
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = FarmUi.buttonColors()
+                    ) {
+                        Text("📄 Export Clean 1-Page PDF", fontWeight = FontWeight.Bold)
+                    }
+
+                    Button(
+                        onClick = {
+                            showShareDialog = false
+                            FarmShareUtils.shareWhatsAppSummary(
+                                context = context,
+                                farmName = "FarmOS",
+                                animal = animal,
+                                healthHistory = emptyList()
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = FarmUi.teal,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("💬 Share Summary via WhatsApp", fontWeight = FontWeight.Bold)
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showShareDialog = false }) {
+                    Text("Close", color = FarmUi.textMuted)
                 }
             },
             containerColor = FarmUi.dialogSurface,

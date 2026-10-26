@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,6 +28,8 @@ import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,6 +42,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -48,8 +55,21 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.samuel.farmos.data.Animal
+import com.samuel.farmos.data.FinanceRecord
+import com.samuel.farmos.data.HealthCase
+import com.samuel.farmos.data.ProductionRecord
 import com.samuel.farmos.data.Task
+import com.samuel.farmos.ui.components.QuickActionSpeedDial
+import com.samuel.farmos.ui.components.QuickActionType
+import com.samuel.farmos.ui.components.QuickExpenseBottomSheet
+import com.samuel.farmos.ui.components.QuickHealthBottomSheet
+import com.samuel.farmos.ui.components.QuickMilkBottomSheet
+import com.samuel.farmos.ui.components.QuickTaskBottomSheet
+import com.samuel.farmos.ui.components.VoiceLoggingDialog
 import com.samuel.farmos.ui.theme.FarmOsTheme
+import com.samuel.farmos.util.ParsedVoiceAction
+import com.samuel.farmos.util.rememberIsOnline
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,8 +94,22 @@ fun HomeScreen(
     onNavigateToLogin: () -> Unit = {},
     onNavigateToSignUp: () -> Unit = {},
     onToggleTask: (Task) -> Unit = {},
-    onEditTask: (Task) -> Unit = {}
+    onEditTask: (Task) -> Unit = {},
+    animals: List<Animal> = emptyList(),
+    onQuickSaveMilk: (ProductionRecord) -> Unit = {},
+    onQuickSaveHealth: (HealthCase) -> Unit = {},
+    onQuickSaveExpense: (FinanceRecord) -> Unit = {},
+    onQuickSaveTask: (Task) -> Unit = {}
 ) {
+    val isOnline by rememberIsOnline()
+    var showOfflineDialog by remember { mutableStateOf(false) }
+
+    var showMilkSheet by remember { mutableStateOf(false) }
+    var showHealthSheet by remember { mutableStateOf(false) }
+    var showExpenseSheet by remember { mutableStateOf(false) }
+    var showTaskSheet by remember { mutableStateOf(false) }
+    var showVoiceDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -83,11 +117,30 @@ fun HomeScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         FarmLogo(36.dp)
                         Column(modifier = Modifier.padding(start = 10.dp)) {
-                            Text(
-                                text = if (isGuest) "FarmOS" else farmName?.takeIf { it.isNotBlank() } ?: "FarmOS",
-                                fontWeight = FontWeight.Bold,
-                                color = FarmUi.green
-                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = if (isGuest) "FarmOS" else farmName?.takeIf { it.isNotBlank() } ?: "FarmOS",
+                                    fontWeight = FontWeight.Bold,
+                                    color = FarmUi.green
+                                )
+                                if (!isOnline) {
+                                    Spacer(Modifier.width(8.dp))
+                                    Surface(
+                                        shape = RoundedCornerShape(10.dp),
+                                        color = FarmUi.amber.copy(alpha = 0.2f),
+                                        border = BorderStroke(1.dp, FarmUi.amber.copy(alpha = 0.5f)),
+                                        modifier = Modifier.clickable { showOfflineDialog = true }
+                                    ) {
+                                        Text(
+                                            text = "☁️ Offline",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = FarmUi.amber,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
                             Text(
                                 text = if (isGuest) "Modern Farm Management" else "Farm Overview",
                                 style = MaterialTheme.typography.bodyMedium,
@@ -111,13 +164,12 @@ fun HomeScreen(
         },
         containerColor = FarmUi.background
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 32.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 96.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
             item {
                 WelcomeCard(farmName = farmName, isGuest = isGuest, onGetStarted = onNavigateToSignUp)
             }
@@ -301,6 +353,145 @@ fun HomeScreen(
                 )
             }
         }
+
+        if (!isGuest) {
+            QuickActionSpeedDial(
+                onSelectAction = { action ->
+                    when (action) {
+                        QuickActionType.VOICE -> showVoiceDialog = true
+                        QuickActionType.MILK -> showMilkSheet = true
+                        QuickActionType.HEALTH -> showHealthSheet = true
+                        QuickActionType.EXPENSE -> showExpenseSheet = true
+                        QuickActionType.TASK -> showTaskSheet = true
+                    }
+                },
+                modifier = Modifier.align(Alignment.BottomEnd)
+            )
+        }
+    }
+}
+
+    if (showOfflineDialog) {
+        AlertDialog(
+            onDismissRequest = { showOfflineDialog = false },
+            title = { Text("Offline Mode Active ☁️", fontWeight = FontWeight.Bold, color = FarmUi.green) },
+            text = {
+                Text(
+                    "You are currently offline. You can continue recording milk, tasks, health, and expenses without disruption. FarmOS will automatically synchronize everything with your account as soon as your connection returns.",
+                    color = FarmUi.ink
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showOfflineDialog = false },
+                    shape = RoundedCornerShape(20.dp),
+                    colors = FarmUi.buttonColors()
+                ) {
+                    Text("Understood", fontWeight = FontWeight.Bold)
+                }
+            },
+            containerColor = FarmUi.dialogSurface,
+            shape = RoundedCornerShape(24.dp)
+        )
+    }
+
+    if (showVoiceDialog) {
+        VoiceLoggingDialog(
+            animals = animals,
+            onDismiss = { showVoiceDialog = false },
+            onActionParsed = { action ->
+                showVoiceDialog = false
+                when (action) {
+                    is ParsedVoiceAction.Milk -> {
+                        onQuickSaveMilk(
+                            ProductionRecord(
+                                type = com.samuel.farmos.data.ProductionType.MILK,
+                                linkedAnimalId = action.animalId,
+                                quantity = action.liters,
+                                dateMillis = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                    is ParsedVoiceAction.Health -> {
+                        onQuickSaveHealth(
+                            HealthCase(
+                                linkedAnimalId = action.animalId ?: "",
+                                mainComplaint = action.issue,
+                                clinicalSigns = listOf(action.sign),
+                                status = com.samuel.farmos.data.HealthCaseStatus.ACTIVE,
+                                createdDateMillis = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                    is ParsedVoiceAction.Expense -> {
+                        onQuickSaveExpense(
+                            FinanceRecord(
+                                type = com.samuel.farmos.data.FinanceType.EXPENSE,
+                                category = action.category,
+                                amountUgx = action.amount,
+                                description = action.note,
+                                dateMillis = System.currentTimeMillis()
+                            )
+                        )
+                    }
+                    is ParsedVoiceAction.NewTask -> {
+                        onQuickSaveTask(
+                            Task(
+                                title = action.title,
+                                category = action.category,
+                                dueDateMillis = System.currentTimeMillis() + 86400000L,
+                                completed = false
+                            )
+                        )
+                    }
+                    is ParsedVoiceAction.Unknown -> {
+                        showTaskSheet = true
+                    }
+                }
+            }
+        )
+    }
+
+    if (showMilkSheet) {
+        QuickMilkBottomSheet(
+            animals = animals,
+            onDismiss = { showMilkSheet = false },
+            onSave = { record ->
+                showMilkSheet = false
+                onQuickSaveMilk(record)
+            }
+        )
+    }
+
+    if (showHealthSheet) {
+        QuickHealthBottomSheet(
+            animals = animals,
+            onDismiss = { showHealthSheet = false },
+            onSave = { case ->
+                showHealthSheet = false
+                onQuickSaveHealth(case)
+            }
+        )
+    }
+
+    if (showExpenseSheet) {
+        QuickExpenseBottomSheet(
+            onDismiss = { showExpenseSheet = false },
+            onSave = { expense ->
+                showExpenseSheet = false
+                onQuickSaveExpense(expense)
+            }
+        )
+    }
+
+    if (showTaskSheet) {
+        QuickTaskBottomSheet(
+            onDismiss = { showTaskSheet = false },
+            onSave = { task ->
+                showTaskSheet = false
+                onQuickSaveTask(task)
+            }
+        )
     }
 }
 

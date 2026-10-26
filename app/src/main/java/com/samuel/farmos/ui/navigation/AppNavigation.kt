@@ -252,7 +252,12 @@ fun AppNavigation(
                         onNavigateToLogin = { navController.navigate(Routes.LOGIN) },
                         onNavigateToSignUp = { navController.navigate(Routes.AUTH) },
                         onToggleTask = { task -> scope.launch { farmViewModel.toggleTaskComplete(task) } },
-                        onEditTask = { task -> navController.navigate(Routes.editTask(task.id)) }
+                        onEditTask = { task -> navController.navigate(Routes.editTask(task.id)) },
+                        animals = animals,
+                        onQuickSaveMilk = { record -> scope.launch { farmViewModel.saveProduction(record) } },
+                        onQuickSaveHealth = { case -> scope.launch { farmViewModel.saveHealthCase(case) } },
+                        onQuickSaveExpense = { expense -> scope.launch { farmViewModel.saveFinance(expense) } },
+                        onQuickSaveTask = { task -> scope.launch { farmViewModel.saveTask(task) } }
                     )
                 }
             }
