@@ -476,8 +476,12 @@ fun AppNavigation(
 
             composable(Routes.FINANCE_LIST) {
                 val records by farmViewModel.financeRecords.collectAsStateWithLifecycle()
+                val animals by farmViewModel.animals.collectAsStateWithLifecycle()
+                val productionRecords by farmViewModel.productionRecords.collectAsStateWithLifecycle()
                 FinanceScreen(
                     records = records,
+                    animals = animals,
+                    productionRecords = productionRecords,
                     onAddRecord = { navController.navigate(Routes.ADD_FINANCE) },
                     onDeleteRecord = { id -> scope.launch { farmViewModel.deleteFinance(id) } },
                     onBack = { navController.popBackStack() }
@@ -498,8 +502,12 @@ fun AppNavigation(
 
             composable(Routes.HEALTH_LIST) {
                 val cases by farmViewModel.healthCases.collectAsStateWithLifecycle()
+                val animals by farmViewModel.animals.collectAsStateWithLifecycle()
+                val farmName by farmViewModel.currentFarmName.collectAsStateWithLifecycle()
                 HealthScreen(
                     cases = cases,
+                    animals = animals,
+                    farmName = farmName ?: "My Farm",
                     onAddCase = { navController.navigate(Routes.ADD_HEALTH_CASE) },
                     onCaseDetail = { id -> navController.navigate(Routes.healthCaseDetail(id)) },
                     onBack = { navController.popBackStack() }

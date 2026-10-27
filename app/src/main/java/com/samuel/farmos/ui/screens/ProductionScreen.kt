@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import com.samuel.farmos.data.ProductionRecord
 import com.samuel.farmos.data.ProductionType
 import com.samuel.farmos.ui.components.FarmDeleteButton
+import com.samuel.farmos.ui.components.LivestockHeatStressCard
 import com.samuel.farmos.ui.theme.FarmOsTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -188,6 +189,11 @@ fun ProductionScreen(
                         textColor = mintText,
                         modifier = Modifier.weight(1f)
                     )
+                }
+            }
+            if (selectedType == ProductionType.MILK) {
+                item {
+                    LivestockHeatStressCard()
                 }
             }
             if (selectedRecords.isEmpty()) {
