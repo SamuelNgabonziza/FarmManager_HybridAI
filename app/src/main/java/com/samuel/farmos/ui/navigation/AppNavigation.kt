@@ -286,7 +286,8 @@ fun AppNavigation(
                 AdminScreen(
                     correctPin = adminPin,
                     onSetPin = { newPin -> scope.launch { farmViewModel.setAdminPin(newPin) } },
-                    onOpenFinance = { navController.navigate(Routes.FINANCE_LIST) }
+                    onOpenFinance = { navController.navigate(Routes.FINANCE_LIST) },
+                    onBack = { navController.popBackStack() }
                 )
             }
 

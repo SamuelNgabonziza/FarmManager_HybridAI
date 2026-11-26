@@ -1,7 +1,9 @@
 package com.samuel.farmos.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,8 +12,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -37,12 +41,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.samuel.farmos.auth.GoogleAuthUiClient
 import com.samuel.farmos.ui.components.FarmSnackbarProvider
@@ -87,7 +94,16 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            FarmLogo(56.dp)
+            Surface(
+                modifier = Modifier.size(60.dp),
+                shape = CircleShape,
+                color = Color(0xFF80E3A7).copy(alpha = 0.85f)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text("🚜", fontSize = 28.sp)
+                }
+            }
+
             Spacer(modifier = Modifier.height(14.dp))
             Text(
                 text = "Welcome Back",
@@ -146,7 +162,37 @@ fun LoginScreen(
                         }
                     )
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        Text(
+                            text = "Forgot Password?",
+                            color = FarmUi.green,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.clickable {
+                                val trimmed = email.trim()
+                                if (trimmed.isBlank()) {
+                                    snackbar.show("Enter your email above to reset password.")
+                                } else if (auth == null) {
+                                    snackbar.show("Authentication is unavailable.")
+                                } else {
+                                    auth.sendPasswordResetEmail(trimmed).addOnCompleteListener { task ->
+                                        if (task.isSuccessful) {
+                                            snackbar.show("Reset link sent to $trimmed")
+                                        } else {
+                                            snackbar.show(task.exception?.localizedMessage ?: "Failed to send reset link.")
+                                        }
+                                    }
+                                }
+                            }
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Button(
                         onClick = {
@@ -177,7 +223,7 @@ fun LoginScreen(
                         shape = RoundedCornerShape(20.dp),
                         colors = FarmUi.buttonColors()
                     ) {
-                        Text(if (isLoading) "Signing In…" else "Log In", fontWeight = FontWeight.Bold)
+                        Text(if (isLoading) "Signing In…" else "Log In →", fontWeight = FontWeight.Bold)
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -218,27 +264,32 @@ fun LoginScreen(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !isLoading
                     )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("Don't have an account?", color = FarmUi.textMuted, style = MaterialTheme.typography.bodyMedium)
-                        TextButton(onClick = onNavigateToSignUp) {
-                            Text("Sign Up", color = FarmUi.green, fontWeight = FontWeight.Bold)
-                        }
-                    }
                 }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToSignUp() },
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Don't have an account? ", color = FarmUi.green, style = MaterialTheme.typography.bodyMedium)
+                Text("Sign Up", color = FarmUi.green, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            TextButton(onClick = onSkip) {
-                Text("Skip for now", color = FarmUi.textMuted, fontWeight = FontWeight.SemiBold)
-            }
+            Text(
+                text = "Skip for now",
+                color = FarmUi.textMuted,
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.bodyMedium,
+                textDecoration = TextDecoration.Underline,
+                modifier = Modifier.clickable { onSkip() }
+            )
         }
     }
 }

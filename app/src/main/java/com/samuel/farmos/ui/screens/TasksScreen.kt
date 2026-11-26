@@ -237,19 +237,9 @@ fun TasksScreen(
             TopAppBar(
                 title = {
                     Column {
-                        val titleText = when (selectedTab) {
-                            TaskViewTab.ACTIVE -> "Farm Tasks"
-                            TaskViewTab.OVERDUE -> "Overdue Tasks"
-                            TaskViewTab.COMPLETED -> "Completed Tasks"
-                        }
-                        val subtitleText = when (selectedTab) {
-                            TaskViewTab.ACTIVE -> "${activeTasks.size} upcoming tasks"
-                            TaskViewTab.OVERDUE -> if (overdueTasks.isEmpty()) "All caught up! 🎉" else "${overdueTasks.size} require attention"
-                            TaskViewTab.COMPLETED -> "${completedTasks.size} archived tasks"
-                        }
-                        Text(titleText, fontWeight = FontWeight.Bold, color = FarmUi.green)
+                        Text("Today's Tasks", fontWeight = FontWeight.Bold, color = FarmUi.green)
                         Text(
-                            subtitleText,
+                            if (overdueTasks.isEmpty() && activeTasks.isEmpty()) "All caught up! 🎉" else "${activeTasks.size + overdueTasks.size} tasks scheduled",
                             style = MaterialTheme.typography.bodySmall,
                             color = FarmUi.textMuted
                         )
@@ -258,46 +248,6 @@ fun TasksScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FarmUi.green)
-                    }
-                },
-                actions = {
-                    // Quick Action: Open Phone Calendar
-                    IconButton(
-                        onClick = {
-                            openPhoneCalendar(context)
-                        }
-                    ) {
-                        Icon(
-                            Icons.Default.CalendarMonth,
-                            contentDescription = "Open Phone Calendar",
-                            tint = FarmUi.green
-                        )
-                    }
-
-                    // Top Archive Icon with Badge
-                    IconButton(
-                        onClick = {
-                            selectedTab = if (selectedTab == TaskViewTab.COMPLETED) TaskViewTab.ACTIVE else TaskViewTab.COMPLETED
-                        }
-                    ) {
-                        BadgedBox(
-                            badge = {
-                                if (completedTasks.isNotEmpty()) {
-                                    Badge(
-                                        containerColor = FarmUi.green,
-                                        contentColor = Color.White
-                                    ) {
-                                        Text("${completedTasks.size}", fontSize = 10.sp)
-                                    }
-                                }
-                            }
-                        ) {
-                            Icon(
-                                Icons.Default.TaskAlt,
-                                contentDescription = "Completed Tasks Archive",
-                                tint = if (selectedTab == TaskViewTab.COMPLETED) FarmUi.green else FarmUi.textMuted
-                            )
-                        }
                     }
                 },
                 colors = FarmUi.topAppBarColors()
@@ -322,6 +272,50 @@ fun TasksScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
+            // Today on the farm banner card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
+                border = BorderStroke(1.dp, FarmUi.cardBorder)
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .background(FarmUi.iconTeal, RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Assignment,
+                            contentDescription = null,
+                            tint = FarmUi.teal,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            "Today on the farm",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = FarmUi.ink
+                        )
+                        Text(
+                            if (activeTasks.isEmpty() && overdueTasks.isEmpty()) "No urgent items. You're all caught up."
+                            else "${activeTasks.size + overdueTasks.size} tasks require action today.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = FarmUi.textMuted
+                        )
+                    }
+                }
+            }
+
             // Segmented Filter Tabs
             LazyRow(
                 modifier = Modifier
@@ -467,12 +461,7 @@ fun TasksScreen(
                                 Checkbox(
                                     checked = task.completed,
                                     onCheckedChange = { checked ->
-                                        if (checked) {
-                                            taskToComplete = task
-                                        } else {
-                                            // Uncompleting moves it back to active immediately
-                                            onToggleTaskComplete(task)
-                                        }
+                                        onToggleTaskComplete(task)
                                     },
                                     colors = CheckboxDefaults.colors(
                                         checkedColor = FarmUi.green,
@@ -534,6 +523,13 @@ fun TasksScreen(
                                 }
 
                                 Row(verticalAlignment = Alignment.CenterVertically) {
+                                    TextButton(
+                                        onClick = { onEditTask(task.id) },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+                                    ) {
+                                        Text("Edit", color = FarmUi.green, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                                    }
+
                                     // Calendar Export Icon
                                     IconButton(
                                         onClick = {

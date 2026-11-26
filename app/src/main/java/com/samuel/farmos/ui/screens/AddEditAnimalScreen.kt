@@ -125,7 +125,7 @@ fun AddEditAnimalScreen(
         }
         weightError = !isWeightValid
         if (tagNumberError || duplicateTagError || weightError) return
-        showSaveConfirm = true
+        saveAnimal()
     }
 
     fun saveAnimal() {
@@ -177,63 +177,12 @@ fun AddEditAnimalScreen(
                 .imePadding(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Header Banner
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        brush = Brush.horizontalGradient(
-                            listOf(Color(0xFF075C43), Color(0xFF009D8D))
-                        ),
-                        shape = RoundedCornerShape(22.dp)
-                    )
-                    .padding(horizontal = 18.dp, vertical = 20.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = if (animal == null) "Register Livestock 🐄" else "Edit Animal Details 📝",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = if (animal == null) "Add new animal to your farm inventory" else "Update tag, breed, weight & status",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.White.copy(alpha = 0.9f)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Surface(
-                        color = Color.White.copy(alpha = 0.16f),
-                        shape = CircleShape
-                    ) {
-                        Box(
-                            modifier = Modifier.size(46.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Pets,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(24.dp)
-                            )
-                        }
-                    }
-                }
-            }
-
             // Section 1: Classification & ID
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
-                border = BorderStroke(1.dp, FarmUi.teal.copy(alpha = 0.35f))
+                border = BorderStroke(1.dp, FarmUi.cardBorder)
             ) {
                 Column(
                     modifier = Modifier.padding(18.dp),
@@ -623,22 +572,6 @@ fun AddEditAnimalScreen(
                         }
                     }
                 }
-            }
-
-            // Primary Save Action Button
-            Button(
-                onClick = ::validateAndPrompt,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = FarmUi.buttonColors()
-            ) {
-                Text(
-                    text = if (animal == null) "Save Animal" else "Update Animal",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
             }
 
             if (animal != null && onDelete != null) {

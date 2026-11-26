@@ -13,13 +13,20 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,11 +41,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.samuel.farmos.ui.theme.FarmOsTheme
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AdminScreen(
     correctPin: String?,
     onSetPin: (String) -> Unit,
-    onOpenFinance: () -> Unit = {}
+    onOpenFinance: () -> Unit = {},
+    onBack: () -> Unit = {}
 ) {
     var enteredPin by remember { mutableStateOf("") }
     var unlocked by remember { mutableStateOf(correctPin.isNullOrBlank()) }
@@ -47,13 +56,27 @@ fun AdminScreen(
     var confirmPin by remember { mutableStateOf("") }
     var mismatchError by remember { mutableStateOf<String?>(null) }
 
-    Surface(Modifier.fillMaxSize(), color = FarmUi.background) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Admin & Finance Access", fontWeight = FontWeight.Bold, color = FarmUi.green) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = FarmUi.green)
+                    }
+                },
+                colors = FarmUi.topAppBarColors()
+            )
+        },
+        containerColor = FarmUi.background
+    ) { innerPadding ->
         Column(
             Modifier
                 .fillMaxSize()
+                .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
                 .imePadding()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {

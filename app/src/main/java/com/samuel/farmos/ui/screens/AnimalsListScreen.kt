@@ -134,53 +134,11 @@ fun AnimalsListScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 4.dp),
-                shape = FarmUi.cardShape,
-                colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
-                border = BorderStroke(1.dp, FarmUi.cardBorder)
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(38.dp)
-                            .background(FarmUi.iconTeal, RoundedCornerShape(12.dp)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.Pets,
-                            contentDescription = null,
-                            tint = FarmUi.teal,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            "Livestock Registry",
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = FarmUi.ink
-                        )
-                        Text(
-                            "${animals.size} registered across all species",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = FarmUi.textMuted
-                        )
-                    }
-                }
-            }
-
             // Species filter pills
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                    .padding(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 herdSpecies.forEach { species ->
@@ -264,7 +222,7 @@ fun AnimalsListScreen(
                                     .clickable(role = Role.Button) { onEditAnimal(animal.id) },
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                TableCell(animal.tagNumber, 88.dp)
+                                TableCell(animal.tagNumber, 88.dp, textColor = FarmUi.green)
                                 TableCell(animal.name.ifBlank { "—" }, 100.dp)
                                 TableCell(animal.breed.ifBlank { "—" }, 126.dp)
                                 TableCell(animal.gender.name.lowercase().replaceFirstChar { it.uppercase() }, 104.dp)
@@ -296,12 +254,13 @@ private fun TableCell(
     text: String,
     width: androidx.compose.ui.unit.Dp,
     header: Boolean = false,
-    headerColor: Color = Color.Unspecified
+    headerColor: Color = Color.Unspecified,
+    textColor: Color = Color.Unspecified
 ) {
     Text(
         text = text,
         modifier = Modifier.width(width).padding(horizontal = 9.dp, vertical = if (header) 12.dp else 16.dp),
-        color = if (header) headerColor else FarmUi.ink,
+        color = if (header) headerColor else if (textColor != Color.Unspecified) textColor else FarmUi.ink,
         fontWeight = if (header) FontWeight.Bold else FontWeight.Normal,
         style = if (header) MaterialTheme.typography.titleSmall else MaterialTheme.typography.bodyMedium,
         maxLines = 2

@@ -22,7 +22,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,21 +37,29 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.samuel.farmos.data.Farm
-import com.samuel.farmos.ui.components.FarmDeleteButton
-import com.samuel.farmos.ui.components.FarmEmptyState
 import com.samuel.farmos.ui.theme.FarmOsTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,6 +73,10 @@ fun FarmSwitcherScreen(
     onDeleteFarm: (Farm) -> Unit,
     onAddFarm: () -> Unit
 ) {
+    var farmToDelete by remember { mutableStateOf<Farm?>(null) }
+    var adminPinInput by remember { mutableStateOf("") }
+    var isPinVisible by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -99,13 +117,52 @@ fun FarmSwitcherScreen(
                     CircularProgressIndicator(color = FarmUi.green)
                 }
             } else if (farms.isEmpty()) {
-                FarmEmptyState(
-                    icon = Icons.Default.Home,
-                    title = "No farms yet",
-                    message = "Create a farm to start recording animals, tasks, production and finances.",
-                    actionLabel = "Add Farm",
-                    onAction = onAddFarm
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(24.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
+                        border = BorderStroke(1.dp, FarmUi.cardBorder)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text("🏡", fontSize = 48.sp)
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Text(
+                                text = "No Farms Found",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = FarmUi.green
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "You haven't created a farm yet. Tap below to name your first farm.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = FarmUi.textMuted,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 20.sp
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Button(
+                                onClick = onAddFarm,
+                                shape = RoundedCornerShape(20.dp),
+                                colors = FarmUi.buttonColors()
+                            ) {
+                                Text("Create First Farm", fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
             } else {
                 LazyColumn(
                     contentPadding = PaddingValues(16.dp),
@@ -175,16 +232,99 @@ fun FarmSwitcherScreen(
                                         )
                                     }
                                 }
-                                FarmDeleteButton(
-                                    description = "${farm.farmName} farm",
-                                    onDelete = { onDeleteFarm(farm) }
-                                )
+                                IconButton(onClick = { farmToDelete = farm }) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Delete Farm",
+                                        tint = FarmUi.coral
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
         }
+    }
+
+    farmToDelete?.let { farm ->
+        AlertDialog(
+            onDismissRequest = {
+                farmToDelete = null
+                adminPinInput = ""
+            },
+            title = {
+                Text(
+                    "Delete Farm",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = FarmUi.coral
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        "Are you sure you want to delete '${farm.farmName}'? All animals, tasks, and records belonging to this farm will be permanently deleted.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = FarmUi.ink
+                    )
+                    Text(
+                        "Enter Admin PIN / Password to confirm:",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = FarmUi.green
+                    )
+                    OutlinedTextField(
+                        value = adminPinInput,
+                        onValueChange = { adminPinInput = it },
+                        placeholder = { Text("Admin PIN") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = FarmUi.fieldShape,
+                        colors = FarmUi.textFieldColors(),
+                        visualTransformation = if (isPinVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { isPinVisible = !isPinVisible }) {
+                                Icon(
+                                    imageVector = if (isPinVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                    contentDescription = null,
+                                    tint = FarmUi.textMuted
+                                )
+                            }
+                        }
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val target = farmToDelete
+                        farmToDelete = null
+                        adminPinInput = ""
+                        target?.let { onDeleteFarm(it) }
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isSystemInDarkTheme()) Color(0xFFFFB4AB) else Color(0xFFBA1A1A),
+                        contentColor = if (isSystemInDarkTheme()) Color(0xFF690005) else Color.White
+                    ),
+                    shape = RoundedCornerShape(20.dp)
+                ) {
+                    Text("Delete Farm", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        farmToDelete = null
+                        adminPinInput = ""
+                    }
+                ) {
+                    Text("Cancel", color = FarmUi.ink, fontWeight = FontWeight.SemiBold)
+                }
+            },
+            containerColor = FarmUi.dialogSurface,
+            shape = RoundedCornerShape(24.dp)
+        )
     }
 }
 
