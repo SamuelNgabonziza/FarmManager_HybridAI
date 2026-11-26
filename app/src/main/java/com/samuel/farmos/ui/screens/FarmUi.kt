@@ -58,7 +58,7 @@ object FarmUi {
     val fieldShape = RoundedCornerShape(12.dp)
     val pillShape = RoundedCornerShape(50.dp)
 
-    val background: Color @Composable get() = if (isSystemInDarkTheme()) Color(0xFF1E2822) else Color(0xFFF7FBF5)
+    val background: Color @Composable get() = Color.Transparent
     val surface: Color @Composable get() = if (isSystemInDarkTheme()) Color(0xFF25332A) else Color.White
     val surfaceWarm: Color @Composable get() = if (isSystemInDarkTheme()) Color(0xFF383020) else Color.White
     val surfaceMint: Color @Composable get() = if (isSystemInDarkTheme()) Color(0xFF223829) else Color.White
@@ -100,7 +100,8 @@ object FarmUi {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun topAppBarColors(): TopAppBarColors = TopAppBarDefaults.topAppBarColors(
-        containerColor = Color.Transparent,
+        containerColor = background,
+        scrolledContainerColor = background,
         titleContentColor = MaterialTheme.colorScheme.onSurface,
         navigationIconContentColor = MaterialTheme.colorScheme.onSurface,
         actionIconContentColor = green

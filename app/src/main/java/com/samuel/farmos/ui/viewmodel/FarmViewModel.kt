@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.Calendar
 
 /**
@@ -125,13 +126,17 @@ class FarmViewModel(
 
     // --- Auth / farms ------------------------------------------------------
 
+    private var lastLoadedUid: String? = null
+
     private val authListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
         val newUid = firebaseAuth.currentUser?.uid
         _uid.value = newUid
         if (newUid == null) {
+            lastLoadedUid = null
             _farms.value = emptyList()
             _isLoading.value = false
-        } else {
+        } else if (newUid != lastLoadedUid) {
+            lastLoadedUid = newUid
             viewModelScope.launch { loadFarms(newUid) }
         }
     }
@@ -147,7 +152,17 @@ class FarmViewModel(
 
     private suspend fun loadFarms(uid: String) {
         _isLoading.value = true
-        runCatching { repository.getFarms(uid) }
+        runCatching {
+            val loaded = withTimeoutOrNull(10_000L) { repository.getFarms(uid) } ?: emptyList()
+            if (loaded.isEmpty()) {
+                // Ensure a newly signed-in user has a default farm so HomeScreen works immediately
+                // without blocking on a separate "Name Your Farm" screen.
+                runCatching { repository.createFarm(uid, "My Farm") }
+                withTimeoutOrNull(10_000L) { repository.getFarms(uid) } ?: loaded
+            } else {
+                loaded
+            }
+        }
             .onSuccess { list ->
                 _farms.value = list
                 ensureActiveFarm(list)

@@ -1,11 +1,13 @@
 package com.samuel.farmos.ui.screens
 
+import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocument
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -25,6 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -34,11 +38,16 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddComment
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -59,6 +68,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,8 +76,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -93,7 +108,11 @@ fun AiTabScreen(
     savedChats: List<SavedAiChat> = emptyList(),
     onStartNewChat: () -> Unit = {},
     onOpenSavedChat: (String) -> Unit = {},
-    onDeleteSavedChat: (String) -> Unit = {}
+    onDeleteSavedChat: (String) -> Unit = {},
+    executionMode: String = "HYBRID_READY",
+    statusDetail: String = "Hybrid AI ready (On-Device preferred, Cloud fallback)",
+    errorMessage: String? = null,
+    onDismissError: () -> Unit = {}
 ) {
     val isDark = isSystemInDarkTheme()
 
@@ -147,7 +166,16 @@ fun AiTabScreen(
     var chatToDelete by remember { mutableStateOf<SavedAiChat?>(null) }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
     val snackbar = LocalFarmSnackbar.current
+    val listState = rememberLazyListState()
+
+    val lastMessageLength = messages.lastOrNull()?.text?.length ?: 0
+    LaunchedEffect(messages.size, lastMessageLength) {
+        if (messages.isNotEmpty()) {
+            listState.animateScrollToItem(messages.lastIndex)
+        }
+    }
 
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -270,7 +298,56 @@ fun AiTabScreen(
                 .padding(innerPadding)
                 .imePadding()
         ) {
+            HybridInferenceStatusBar(
+                executionMode = executionMode,
+                statusDetail = statusDetail,
+                isDark = isDark
+            )
+
+            errorMessage?.let { err ->
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 14.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (isDark) Color(0xFF3F2024) else Color(0xFFFFEBEE),
+                    border = BorderStroke(1.dp, FarmUi.coral.copy(alpha = 0.6f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.ErrorOutline,
+                            contentDescription = null,
+                            tint = FarmUi.coral,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = err,
+                            color = if (isDark) Color(0xFFFFD6D9) else Color(0xFF8B1D24),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f)
+                        )
+                        val lastUserPrompt = messages.lastOrNull { it.isUser }?.text
+                        if (!lastUserPrompt.isNullOrBlank() && !isLoading) {
+                            TextButton(onClick = {
+                                onDismissError()
+                                onSendMessage(lastUserPrompt, null)
+                            }) {
+                                Text("Retry", color = FarmUi.coral, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                        IconButton(onClick = onDismissError, modifier = Modifier.size(28.dp)) {
+                            Icon(Icons.Default.Close, contentDescription = "Dismiss error", tint = FarmUi.coral, modifier = Modifier.size(16.dp))
+                        }
+                    }
+                }
+            }
+
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
@@ -301,71 +378,32 @@ fun AiTabScreen(
                             }
                             Spacer(Modifier.height(24.dp))
                             Text(
-                                "What can I help with?",
+                                "What can I help you with at the farm?",
                                 color = helpTitleColor,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 28.sp
+                                fontSize = 24.sp,
+                                textAlign = TextAlign.Center
                             )
-                            Spacer(Modifier.height(14.dp))
+                            Spacer(Modifier.height(12.dp))
                             Text(
-                                text = "Ask about livestock, crops, feed, or\nmanaging your farm.",
+                                text = "Ask about livestock, feed, or\nmanaging the farm.",
                                 color = helpSubtitleColor,
-                                fontSize = 17.sp,
+                                fontSize = 16.sp,
                                 textAlign = TextAlign.Center,
-                                lineHeight = 24.sp
+                                lineHeight = 23.sp
                             )
-                            Spacer(Modifier.height(36.dp))
-
-                            // "Try asking" aligned left
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Text(
-                                    "Try asking",
-                                    color = tryAskingColor,
-                                    fontSize = 17.sp,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.padding(start = 4.dp, bottom = 12.dp)
-                                )
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                                    contentPadding = PaddingValues(horizontal = 2.dp)
-                                ) {
-                                    val suggestions = listOf(
-                                        "Dairy cow feed calculation",
-                                        "Diagnose treatment",
-                                        "Crop pest control advice",
-                                        "Breeding schedule tips",
-                                        "Farm finance management"
-                                    )
-                                    items(suggestions) { suggestion ->
-                                        Surface(
-                                            shape = RoundedCornerShape(10.dp),
-                                            color = chipBg,
-                                            border = BorderStroke(1.dp, chipBorder),
-                                            modifier = Modifier.clickable { promptText = suggestion }
-                                        ) {
-                                            Text(
-                                                suggestion,
-                                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                                                color = chipTextColor,
-                                                fontSize = 15.sp,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                        }
-                                    }
-                                }
-                            }
                         }
                     }
                 }
 
-                items(messages, key = { it.id }) { msg ->
+                items(messages.filter { it.isUser || it.text.isNotBlank() }, key = { it.id }) { msg ->
                     val isUser = msg.isUser
                     val currentBubbleBg = if (isUser) userBubbleBg else assistantBubbleBg
                     val currentBubbleText = if (isUser) userBubbleText else assistantBubbleText
 
-                    Box(
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
+                        horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
                     ) {
                         Surface(
                             modifier = Modifier.fillMaxWidth(if (isUser) 0.82f else 0.92f),
@@ -401,6 +439,41 @@ fun AiTabScreen(
                                         style = MaterialTheme.typography.labelSmall,
                                         color = if (isUser) userBubbleText else topBarIconTint,
                                         fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+
+                        // Gemini-style Copy & Edit actions
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 2.dp, start = 4.dp, end = 4.dp)
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    clipboardManager.setText(AnnotatedString(msg.text))
+                                    snackbar.show("Copied to clipboard")
+                                },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.ContentCopy,
+                                    contentDescription = "Copy message",
+                                    tint = topBarSubtitleColor,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
+                            if (isUser) {
+                                IconButton(
+                                    onClick = { promptText = msg.text },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Edit,
+                                        contentDescription = "Edit message",
+                                        tint = topBarSubtitleColor,
+                                        modifier = Modifier.size(15.dp)
                                     )
                                 }
                             }
@@ -443,31 +516,80 @@ fun AiTabScreen(
                     .padding(horizontal = 10.dp, vertical = 6.dp)
             ) {
                 attachment?.let { att ->
-                    Row(
+                    val previewBitmap = remember(att.uri) {
+                        if (att.mimeType.startsWith("image/")) {
+                            runCatching {
+                                context.contentResolver.openInputStream(att.uri)?.use { stream ->
+                                    BitmapFactory.decodeStream(stream)
+                                }
+                            }.getOrNull()
+                        } else null
+                    }
+                    Surface(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 12.dp, end = 12.dp, bottom = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .padding(horizontal = 6.dp, vertical = 4.dp),
+                        shape = RoundedCornerShape(14.dp),
+                        color = inputCapsuleBg,
+                        border = BorderStroke(1.dp, inputCapsuleBorder)
                     ) {
-                        Text(
-                            "Attachment: ${att.displayName}",
-                            modifier = Modifier.weight(1f),
-                            color = topBarIconTint,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        TextButton(onClick = { attachment = null }) {
-                            Text("Remove", color = FarmUi.coral)
+                        Row(
+                            modifier = Modifier.padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (previewBitmap != null) {
+                                Image(
+                                    bitmap = previewBitmap.asImageBitmap(),
+                                    contentDescription = att.displayName,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                )
+                            } else {
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = squircleBg,
+                                    modifier = Modifier.size(44.dp)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(Icons.Default.Description, contentDescription = null, tint = topBarIconTint)
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    att.displayName,
+                                    color = topBarTitleColor,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    att.mimeType,
+                                    color = topBarSubtitleColor,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    maxLines = 1
+                                )
+                            }
+                            IconButton(onClick = { attachment = null }) {
+                                Icon(Icons.Default.Close, contentDescription = "Remove attachment", tint = FarmUi.coral)
+                            }
                         }
                     }
                 }
 
-                // Outer rounded capsule
+                // Gemini-style unified input pill
                 Surface(
-                    shape = RoundedCornerShape(32.dp),
+                    shape = RoundedCornerShape(28.dp),
                     color = inputCapsuleBg,
                     border = BorderStroke(1.dp, inputCapsuleBorder),
-                    modifier = Modifier.fillMaxWidth()
+                    tonalElevation = 2.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 6.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -475,45 +597,49 @@ fun AiTabScreen(
                             .fillMaxWidth()
                             .padding(horizontal = 6.dp, vertical = 4.dp)
                     ) {
-                        // Paperclip icon
                         IconButton(onClick = { showAttachmentOptions = true }) {
                             Icon(
-                                Icons.Default.AttachFile,
+                                Icons.Default.Add,
                                 contentDescription = "Add attachment",
                                 tint = paperclipTint,
                                 modifier = Modifier.size(24.dp)
                             )
                         }
 
-                        // Pill input field with border
                         OutlinedTextField(
                             value = promptText,
                             onValueChange = { promptText = it },
-                            placeholder = { Text("Write a message...", color = inputPlaceholderColor, fontSize = 15.sp) },
+                            placeholder = {
+                                Text(
+                                    "Ask Farm Assistant...",
+                                    color = inputPlaceholderColor,
+                                    fontSize = 15.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            },
                             modifier = Modifier
                                 .weight(1f)
-                                .height(50.dp),
-                            singleLine = true,
-                            shape = RoundedCornerShape(25.dp),
+                                .heightIn(min = 48.dp, max = 120.dp),
+                            maxLines = 4,
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = inputFieldBorder,
-                                unfocusedBorderColor = inputFieldBorder,
-                                focusedContainerColor = inputFieldBg,
-                                unfocusedContainerColor = inputFieldBg,
+                                focusedBorderColor = Color.Transparent,
+                                unfocusedBorderColor = Color.Transparent,
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
                                 cursorColor = topBarIconTint,
                                 focusedTextColor = inputTextColor,
                                 unfocusedTextColor = inputTextColor
                             )
                         )
 
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(6.dp))
 
-                        // Circular send button
                         val isEnabled = promptText.isNotBlank() && !isLoading
                         Surface(
                             shape = CircleShape,
                             color = if (isEnabled) sendButtonActiveBg else sendButtonBg,
-                            modifier = Modifier.size(46.dp)
+                            modifier = Modifier.size(44.dp)
                         ) {
                             IconButton(
                                 onClick = {
@@ -535,19 +661,6 @@ fun AiTabScreen(
                         }
                     }
                 }
-
-                Spacer(Modifier.height(8.dp))
-
-                // Left-indented 2-line disclaimer
-                Text(
-                    text = "Farm Assistant can make mistakes. Check\nimportant farm decisions.",
-                    color = disclaimerColor,
-                    fontSize = 12.sp,
-                    lineHeight = 16.sp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 18.dp, bottom = 4.dp)
-                )
             }
         }
     }
@@ -851,6 +964,91 @@ private fun AttachmentOptionRow(
                     modifier = Modifier.size(22.dp)
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun HybridInferenceStatusBar(
+    executionMode: String,
+    statusDetail: String,
+    isDark: Boolean
+) {
+    val isOnDevice = executionMode.contains("ON_DEVICE", ignoreCase = true)
+    val isCloud = executionMode.contains("CLOUD", ignoreCase = true)
+    val isError = executionMode.equals("ERROR", ignoreCase = true)
+
+    val badgeLabel = when {
+        isOnDevice -> "ON-DEVICE"
+        executionMode.equals("IN_CLOUD", ignoreCase = true) -> "IN CLOUD"
+        isCloud -> "CLOUD FALLBACK"
+        isError -> "ERROR"
+        else -> "HYBRID AI"
+    }
+    val badgeIcon = when {
+        isOnDevice -> Icons.Default.PhoneAndroid
+        isCloud -> Icons.Default.Cloud
+        isError -> Icons.Default.ErrorOutline
+        else -> Icons.Default.AutoAwesome
+    }
+    val accentColor = when {
+        isOnDevice -> if (isDark) Color(0xFF70DC9E) else Color(0xFF1E6B38)
+        isCloud -> if (isDark) Color(0xFF8BB8FF) else Color(0xFF285EA8)
+        isError -> FarmUi.coral
+        else -> if (isDark) Color(0xFFE5A93C) else Color(0xFFB57810)
+    }
+    val containerColor = when {
+        isOnDevice -> if (isDark) Color(0xFF1A3527) else Color(0xFFE6F6EC)
+        isCloud -> if (isDark) Color(0xFF1C2D42) else Color(0xFFE8F1FC)
+        isError -> if (isDark) Color(0xFF3F2024) else Color(0xFFFFEBEE)
+        else -> if (isDark) Color(0xFF223329) else Color(0xFFF3F8F4)
+    }
+
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = containerColor,
+        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = accentColor.copy(alpha = 0.16f)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = badgeIcon,
+                        contentDescription = badgeLabel,
+                        tint = accentColor,
+                        modifier = Modifier.size(13.dp)
+                    )
+                    Text(
+                        text = badgeLabel,
+                        color = accentColor,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+                }
+            }
+            Text(
+                text = statusDetail,
+                color = if (isDark) Color(0xFFDCEBE2) else Color(0xFF2A3E31),
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 }

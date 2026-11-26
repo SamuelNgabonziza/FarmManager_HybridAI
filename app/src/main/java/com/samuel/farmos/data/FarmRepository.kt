@@ -13,6 +13,11 @@ class FarmRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
     private fun farmsCollection(uid: String) =
         db.collection("users").document(uid).collection("farms")
 
+    private inline fun <reified T> com.google.firebase.firestore.DocumentSnapshot.toSafeObject(): T? =
+        runCatching { toObject(T::class.java) }
+            .onFailure { Log.w("FarmRepository", "Failed to parse ${T::class.java.simpleName} doc=$id", it) }
+            .getOrNull()
+
     private fun animalsCollection(uid: String, farmId: String) =
         farmsCollection(uid).document(farmId).collection("animals")
 
@@ -20,16 +25,16 @@ class FarmRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
         farmsCollection(uid).document(farmId).collection("tasks")
 
     private fun productionCollection(uid: String, farmId: String) =
-        farmsCollection(uid).document(farmId).collection("production")
+        farmsCollection(uid).document(farmId).collection("productionRecords")
 
     private fun breedingCollection(uid: String, farmId: String) =
-        farmsCollection(uid).document(farmId).collection("breeding")
+        farmsCollection(uid).document(farmId).collection("breedingRecords")
 
     private fun feedingCollection(uid: String, farmId: String) =
-        farmsCollection(uid).document(farmId).collection("feeding")
+        farmsCollection(uid).document(farmId).collection("feedingRecords")
 
     private fun financeCollection(uid: String, farmId: String) =
-        farmsCollection(uid).document(farmId).collection("finances")
+        farmsCollection(uid).document(farmId).collection("financeRecords")
 
     private fun healthCaseCollection(uid: String, farmId: String) =
         farmsCollection(uid).document(farmId).collection("healthCases")
@@ -38,7 +43,7 @@ class FarmRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
     suspend fun getFarms(uid: String): List<Farm> {
         val snapshot = farmsCollection(uid).get().await()
         return snapshot.documents.mapNotNull { doc ->
-            doc.toObject(Farm::class.java)?.copy(id = doc.id)
+            doc.toSafeObject<Farm>()?.copy(id = doc.id)
         }
     }
 
@@ -59,7 +64,7 @@ class FarmRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
 
     suspend fun getFarm(uid: String, farmId: String): Farm? {
         val doc = farmsCollection(uid).document(farmId).get().await()
-        return doc.toObject(Farm::class.java)?.copy(id = doc.id)
+        return doc.toSafeObject<Farm>()?.copy(id = doc.id)
     }
 
     suspend fun deleteFarm(uid: String, farmId: String) {
@@ -67,7 +72,7 @@ class FarmRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
         // Firestore keeps subcollections when a parent document is removed.
         // Remove this farm's records first so deleting it does not leave
         // unreachable livestock and production data behind.
-        listOf("animals", "tasks", "production", "breeding", "feeding", "finances", "healthCases")
+        listOf("animals", "tasks", "productionRecords", "breedingRecords", "feedingRecords", "financeRecords", "healthCases")
             .forEach { collectionName ->
                 farmDocument.collection(collectionName).get().await().documents.forEach { record ->
                     record.reference.delete().await()
@@ -84,7 +89,7 @@ class FarmRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
                 return@addSnapshotListener
             }
             val animals = snapshot?.documents?.mapNotNull { doc ->
-                doc.toObject(Animal::class.java)?.copy(id = doc.id)
+                doc.toSafeObject<Animal>()?.copy(id = doc.id)
             } ?: emptyList()
             trySend(animals)
         }
@@ -114,7 +119,7 @@ class FarmRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
                 return@addSnapshotListener
             }
             val tasks = snapshot?.documents?.mapNotNull { doc ->
-                doc.toObject(Task::class.java)?.copy(id = doc.id)
+                doc.toSafeObject<Task>()?.copy(id = doc.id)
             } ?: emptyList()
             trySend(tasks)
         }
@@ -168,7 +173,7 @@ class FarmRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
                 return@addSnapshotListener
             }
             val list = snapshot?.documents?.mapNotNull { doc ->
-                doc.toObject(ProductionRecord::class.java)?.copy(id = doc.id)
+                doc.toSafeObject<ProductionRecord>()?.copy(id = doc.id)
             } ?: emptyList()
             trySend(list)
         }
@@ -198,7 +203,7 @@ class FarmRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
                 return@addSnapshotListener
             }
             val list = snapshot?.documents?.mapNotNull { doc ->
-                doc.toObject(BreedingRecord::class.java)?.copy(id = doc.id)
+                doc.toSafeObject<BreedingRecord>()?.copy(id = doc.id)
             } ?: emptyList()
             trySend(list)
         }
@@ -228,7 +233,7 @@ class FarmRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
                 return@addSnapshotListener
             }
             val list = snapshot?.documents?.mapNotNull { doc ->
-                doc.toObject(FeedingRecord::class.java)?.copy(id = doc.id)
+                doc.toSafeObject<FeedingRecord>()?.copy(id = doc.id)
             } ?: emptyList()
             trySend(list)
         }
@@ -258,7 +263,7 @@ class FarmRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
                 return@addSnapshotListener
             }
             val list = snapshot?.documents?.mapNotNull { doc ->
-                doc.toObject(FinanceRecord::class.java)?.copy(id = doc.id)
+                doc.toSafeObject<FinanceRecord>()?.copy(id = doc.id)
             } ?: emptyList()
             trySend(list)
         }
@@ -288,7 +293,7 @@ class FarmRepository(private val db: FirebaseFirestore = FirebaseFirestore.getIn
                 return@addSnapshotListener
             }
             val list = snapshot?.documents?.mapNotNull { doc ->
-                doc.toObject(HealthCase::class.java)?.copy(id = doc.id)
+                doc.toSafeObject<HealthCase>()?.copy(id = doc.id)
             } ?: emptyList()
             trySend(list)
         }

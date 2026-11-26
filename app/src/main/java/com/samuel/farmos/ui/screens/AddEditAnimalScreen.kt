@@ -117,17 +117,6 @@ fun AddEditAnimalScreen(
     val weightValue = weightKgText.toDoubleOrNull()
     val isWeightValid = weightKgText.isBlank() || (weightValue != null && weightValue > 0.0)
 
-    fun validateAndPrompt() {
-        val trimmedTag = tagNumber.trim()
-        tagNumberError = trimmedTag.isEmpty()
-        duplicateTagError = trimmedTag.isNotBlank() && existingAnimals.any {
-            it.tagNumber.equals(trimmedTag, ignoreCase = true) && it.id != (animal?.id ?: "")
-        }
-        weightError = !isWeightValid
-        if (tagNumberError || duplicateTagError || weightError) return
-        saveAnimal()
-    }
-
     fun saveAnimal() {
         onSave(
             (animal ?: Animal()).copy(
@@ -142,6 +131,17 @@ fun AddEditAnimalScreen(
                 weightKg = weightValue
             )
         )
+    }
+
+    fun validateAndPrompt() {
+        val trimmedTag = tagNumber.trim()
+        tagNumberError = trimmedTag.isEmpty()
+        duplicateTagError = trimmedTag.isNotBlank() && existingAnimals.any {
+            it.tagNumber.equals(trimmedTag, ignoreCase = true) && it.id != (animal?.id ?: "")
+        }
+        weightError = !isWeightValid
+        if (tagNumberError || duplicateTagError || weightError) return
+        saveAnimal()
     }
 
     Scaffold(
@@ -452,7 +452,7 @@ fun AddEditAnimalScreen(
                 border = BorderStroke(1.dp, FarmUi.cardBorder)
             ) {
                 Column(
-                    modifier = Modifier.padding(18.dp),
+                    modifier = Modifier.padding(18.dp)f,
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

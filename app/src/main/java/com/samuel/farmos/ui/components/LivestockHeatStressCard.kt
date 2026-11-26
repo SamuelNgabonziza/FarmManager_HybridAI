@@ -207,7 +207,9 @@ fun LivestockHeatStressCard(
                                 text = "Heat Stress Radar",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = FarmUi.ink
+                                color = FarmUi.ink,
+                                maxLines = 1,
+                                modifier = Modifier.weight(1f, fill = false)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Surface(
@@ -217,10 +219,12 @@ fun LivestockHeatStressCard(
                             ) {
                                 Text(
                                     text = String.format(Locale.US, "THI %.0f", thi),
-                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = levelColor
+                                    color = levelColor,
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                             }
                         }
@@ -252,35 +256,38 @@ fun LivestockHeatStressCard(
                 color = levelBg,
                 border = BorderStroke(1.dp, levelColor.copy(alpha = 0.35f))
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Row(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (stressLevel == HeatStressLevel.COMFORT) "🥛 Yield Status:" else "📉 Est. Milk Impact:",
+                            text = if (stressLevel == HeatStressLevel.COMFORT) "🥛 Yield Status" else "📉 Est. Milk Impact",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.SemiBold,
                             color = FarmUi.ink
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = stressLevel.estYieldLossText,
-                            style = MaterialTheme.typography.bodySmall,
+                            text = if (isExpanded) "Hide Controls ▲" else "Adjust Weather ▼",
+                            style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
-                            color = levelColor
+                            color = FarmUi.teal,
+                            maxLines = 1,
+                            softWrap = false,
+                            modifier = Modifier.clickable { isExpanded = !isExpanded }
                         )
                     }
                     Text(
-                        text = if (isExpanded) "Hide Controls ▲" else "Adjust Weather ▼",
-                        style = MaterialTheme.typography.labelSmall,
+                        text = stressLevel.estYieldLossText,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
-                        color = FarmUi.teal,
-                        modifier = Modifier.clickable { isExpanded = !isExpanded }
+                        color = levelColor
                     )
                 }
             }

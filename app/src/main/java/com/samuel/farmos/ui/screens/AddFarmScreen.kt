@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.statusBarsPadding
 import com.samuel.farmos.ui.theme.FarmOsTheme
 
 @Composable
@@ -50,6 +51,7 @@ fun AddFarmScreen(onFarmCreated: (String) -> Unit) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp, vertical = 40.dp)
                 .imePadding(),

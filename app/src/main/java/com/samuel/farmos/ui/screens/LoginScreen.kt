@@ -56,6 +56,7 @@ import com.samuel.farmos.ui.components.FarmSnackbarProvider
 import com.samuel.farmos.ui.components.GoogleSignInButton
 import com.samuel.farmos.ui.components.LocalFarmSnackbar
 import com.samuel.farmos.ui.theme.FarmOsTheme
+import androidx.compose.foundation.layout.statusBarsPadding
 import kotlinx.coroutines.launch
 
 @Composable
@@ -88,6 +89,7 @@ fun LoginScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .statusBarsPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp)
                 .imePadding(),

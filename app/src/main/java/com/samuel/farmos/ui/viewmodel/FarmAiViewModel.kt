@@ -1,7 +1,6 @@
 package com.samuel.farmos.ui.viewmodel
 
 import android.app.Application
-import android.content.Context
 import android.net.Uri
 import android.util.Base64
 import android.util.Log
@@ -9,14 +8,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.samuel.farmos.BuildConfig
 import com.samuel.farmos.data.AiChatRepository
 import com.samuel.farmos.data.FarmAiContextRepository
 import com.samuel.farmos.data.FarmAiEmptyAnswerException
 import com.samuel.farmos.data.FarmAiImage
 import com.samuel.farmos.data.FarmAiService
 import com.samuel.farmos.data.FarmRepository
-import com.samuel.farmos.data.GeminiFarmAiService
+import com.samuel.farmos.data.HybridFarmAdvisorService
 import com.samuel.farmos.data.Recurrence
 import com.samuel.farmos.data.SavedAiChat
 import com.samuel.farmos.data.SavedAiMessage
@@ -67,35 +65,14 @@ class FarmAiViewModel(application: Application) : AndroidViewModel(application) 
     private val farmRepository = FarmRepository(db)
     private val chatRepository = AiChatRepository(db)
     private val farmAiContextRepository = FarmAiContextRepository(db)
-    private val prefs = application.getSharedPreferences("farm_ai_prefs", Context.MODE_PRIVATE)
 
-    companion object {
-        /**
-         * Fallback embedded Gemini API Key. Paste your key here if you want it built directly into the app
-         * so all users can use the AI assistant without entering an API key themselves.
-         */
-        const val DEFAULT_EMBEDDED_GEMINI_KEY = ""
-    }
+    private val aiService = HybridFarmAdvisorService()
 
-    private fun createAiService(): FarmAiService {
-        val customGeminiKey = prefs.getString("gemini_api_key", null)?.takeIf { it.isNotBlank() }
-        val buildGeminiKey = BuildConfig.GEMINI_API_KEY.takeIf { it.isNotBlank() }
-        val embeddedKey = DEFAULT_EMBEDDED_GEMINI_KEY.takeIf { it.isNotBlank() }
-        val geminiKey = customGeminiKey ?: buildGeminiKey ?: embeddedKey ?: ""
-        return GeminiFarmAiService(apiKey = geminiKey)
-    }
+    private val _executionMode = MutableStateFlow("HYBRID_READY")
+    val executionMode: StateFlow<String> = _executionMode.asStateFlow()
 
-    private var aiService: FarmAiService = createAiService()
-
-    fun setCustomGeminiApiKey(key: String) {
-        prefs.edit().putString("gemini_api_key", key.trim()).apply()
-        aiService = createAiService()
-    }
-
-    fun getGeminiApiKey(): String =
-        prefs.getString("gemini_api_key", null)?.takeIf { it.isNotBlank() }
-            ?: BuildConfig.GEMINI_API_KEY.takeIf { it.isNotBlank() }
-            ?: DEFAULT_EMBEDDED_GEMINI_KEY
+    private val _statusDetail = MutableStateFlow("Hybrid AI ready (On-Device preferred, Cloud fallback)")
+    val statusDetail: StateFlow<String> = _statusDetail.asStateFlow()
 
     private var userId: String? = FirebaseAuth.getInstance().currentUser?.uid
     private var farmId: String? = null
@@ -242,7 +219,14 @@ class FarmAiViewModel(application: Application) : AndroidViewModel(application) 
                     text = ""
                 )
 
-                aiService.streamAnswer(farmContext, promptForModel, image).collect { chunk ->
+                aiService.streamAnswerWithStatus(
+                    farmContext = farmContext,
+                    question = promptForModel,
+                    image = image
+                ) { mode, detail ->
+                    _executionMode.value = mode
+                    _statusDetail.value = detail
+                }.collect { chunk ->
                     reply.append(chunk)
                     _messages.value = _messages.value.map { message ->
                         if (message.id == replyId) {
@@ -271,6 +255,10 @@ class FarmAiViewModel(application: Application) : AndroidViewModel(application) 
             } catch (e: Exception) {
                 Log.e("FarmAiViewModel", "AI Request failed", e)
                 val message = e.toUserMessage()
+                // Remove empty streaming placeholder bubble if no text arrived
+                _messages.value = _messages.value.filterNot { !it.isUser && it.text.isBlank() }
+                _executionMode.value = "HYBRID_READY"
+                _statusDetail.value = "Hybrid AI ready (On-Device preferred, Cloud fallback)"
                 _uiState.value = AiUiState.Error(message)
                 _actionError.value = message
             } finally {

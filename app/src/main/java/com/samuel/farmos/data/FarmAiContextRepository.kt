@@ -71,7 +71,7 @@ class FarmAiContextRepository(private val db: FirebaseFirestore = FirebaseFirest
         sb.append("\n")
 
         // 4. Remaining Collections (Health, Tasks, Feeding, Breeding, Production, Finances)
-        val otherCollections = listOf("healthCases", "tasks", "feeding", "breeding", "production", "finances")
+        val otherCollections = listOf("healthCases", "tasks", "feedingRecords", "breedingRecords", "productionRecords", "financeRecords")
         for (colName in otherCollections) {
             sb.append("=== ").append(colName.uppercase()).append(" ===\n")
             val docs = farmRef.collection(colName).limit(MAX_RECORDS_PER_COLLECTION.toLong()).get().await()

@@ -4,21 +4,20 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -26,28 +25,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.samuel.farmos.ui.theme.FarmOsTheme
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(onFinished: (signedIn: Boolean) -> Unit) {
-    val authResult = remember { CompletableDeferred<Boolean>() }
-
-    DisposableEffect(Unit) {
-        val auth = FirebaseAuth.getInstance()
-        val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
-            authResult.complete(firebaseAuth.currentUser != null)
-        }
-        auth.addAuthStateListener(listener)
-        onDispose {
-            auth.removeAuthStateListener(listener)
-            authResult.complete(false)
-        }
-    }
-
     LaunchedEffect(Unit) {
-        val resolved = withTimeoutOrNull(SPLASH_TIMEOUT_MS) { authResult.await() }
-        onFinished(resolved ?: (FirebaseAuth.getInstance().currentUser != null))
+        delay(SPLASH_DURATION_MS)
+        val signedIn = runCatching { FirebaseAuth.getInstance().currentUser != null }.getOrDefault(false)
+        onFinished(signedIn)
     }
 
     Surface(modifier = Modifier.fillMaxSize(), color = Color(0xFF0D5E4A)) {
@@ -63,11 +48,17 @@ fun SplashScreen(onFinished: (signedIn: Boolean) -> Unit) {
             ) {
                 Box(
                     modifier = Modifier
-                        .size(104.dp)
+                        .size(116.dp)
                         .background(Color(0xFF287864), CircleShape),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "🌾", fontSize = 52.sp)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "🐄", fontSize = 42.sp)
+                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(text = "🐐", fontSize = 22.sp)
+                            Text(text = "🐑", fontSize = 22.sp)
+                        }
+                    }
                 }
                 Spacer(modifier = Modifier.height(32.dp))
                 Text(
@@ -90,7 +81,7 @@ fun SplashScreen(onFinished: (signedIn: Boolean) -> Unit) {
     }
 }
 
-private const val SPLASH_TIMEOUT_MS = 3_000L
+private const val SPLASH_DURATION_MS = 900L
 
 @Preview(showBackground = true)
 @Composable

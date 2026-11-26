@@ -1,6 +1,5 @@
 package com.samuel.farmos.ui.screens
 
-import android.content.Context
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -20,8 +19,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Store
@@ -53,15 +50,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
-import com.samuel.farmos.BuildConfig
 import com.samuel.farmos.ui.components.FarmSnackbarProvider
 import com.samuel.farmos.ui.components.LocalFarmSnackbar
 import com.samuel.farmos.ui.theme.FarmOsTheme
@@ -76,23 +72,18 @@ fun SettingsScreen(
     onSignOut: () -> Unit,
     onBack: () -> Unit = {}
 ) {
-    val context = LocalContext.current
     val snackbar = LocalFarmSnackbar.current
     val user = remember {
         try { FirebaseAuth.getInstance().currentUser } catch (_: Exception) { null }
     }
-    val prefs = remember { context.getSharedPreferences("farm_ai_prefs", Context.MODE_PRIVATE) }
 
     var showAccountDialog by remember { mutableStateOf(false) }
-    var showGeminiKeyDialog by remember { mutableStateOf(false) }
+
     var showSignOutConfirm by remember { mutableStateOf(false) }
     var password by rememberSaveable { mutableStateOf("") }
     var isPasswordVisible by rememberSaveable { mutableStateOf(false) }
     var isVerifying by remember { mutableStateOf(false) }
 
-    var geminiKeyInput by rememberSaveable {
-        mutableStateOf(prefs.getString("gemini_api_key", "") ?: BuildConfig.GEMINI_API_KEY)
-    }
 
     Scaffold(
         topBar = {
@@ -123,18 +114,11 @@ fun SettingsScreen(
                     subtitle = user?.email ?: "Review your sign-in account",
                     iconBackground = FarmUi.settingsIconMint,
                     iconTint = FarmUi.green,
-                    onClick = { showAccountDialog = true }
-                )
-            }
-
-            SettingsGroup {
-                SettingsRow(
-                    icon = Icons.Default.AutoAwesome,
-                    title = "Gemini AI Assistant",
-                    subtitle = if (geminiKeyInput.isNotBlank()) "Gemini API key configured" else "Tap to configure your Gemini API key",
-                    iconBackground = FarmUi.iconWarm,
-                    iconTint = FarmUi.orange,
-                    onClick = { showGeminiKeyDialog = true }
+                    onClick = {
+                        password = ""
+                        isPasswordVisible = false
+                        showAccountDialog = true
+                    }
                 )
             }
 
@@ -186,7 +170,11 @@ fun SettingsScreen(
 
     if (showAccountDialog) {
         AlertDialog(
-            onDismissRequest = { showAccountDialog = false },
+            onDismissRequest = {
+                password = ""
+                isPasswordVisible = false
+                showAccountDialog = false
+            },
             icon = { Icon(Icons.Default.AccountCircle, contentDescription = null, tint = FarmUi.green, modifier = Modifier.size(32.dp)) },
             title = { Text("Account & Password", color = FarmUi.green, fontWeight = FontWeight.Bold) },
             text = {
@@ -229,7 +217,11 @@ fun SettingsScreen(
                                 .addOnCompleteListener { task ->
                                     isVerifying = false
                                     snackbar.show(if (task.isSuccessful) "Account verified." else task.exception?.localizedMessage ?: "Password could not be verified.")
-                                    if (task.isSuccessful) showAccountDialog = false
+                                    if (task.isSuccessful) {
+                                        password = ""
+                                        isPasswordVisible = false
+                                        showAccountDialog = false
+                                    }
                                 }
                         }
                     },
@@ -251,51 +243,13 @@ fun SettingsScreen(
                     }) {
                         Text("Reset via Email", color = FarmUi.textMuted)
                     }
-                    TextButton(onClick = { showAccountDialog = false }) {
+                    TextButton(onClick = {
+                        password = ""
+                        isPasswordVisible = false
+                        showAccountDialog = false
+                    }) {
                         Text("Close", color = FarmUi.textMuted)
                     }
-                }
-            },
-            containerColor = FarmUi.dialogSurface,
-            shape = RoundedCornerShape(24.dp)
-        )
-    }
-
-    if (showGeminiKeyDialog) {
-        AlertDialog(
-            onDismissRequest = { showGeminiKeyDialog = false },
-            icon = { Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = FarmUi.orange, modifier = Modifier.size(32.dp)) },
-            title = { Text("Google Gemini API Key", color = FarmUi.green, fontWeight = FontWeight.Bold) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Enter your Google Gemini API key to power the AI Farm Assistant:", color = FarmUi.ink, style = MaterialTheme.typography.bodyMedium)
-                    OutlinedTextField(
-                        value = geminiKeyInput,
-                        onValueChange = { geminiKeyInput = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("AIzaSy...") },
-                        singleLine = true,
-                        shape = FarmUi.fieldShape,
-                        colors = FarmUi.textFieldColors()
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        prefs.edit().putString("gemini_api_key", geminiKeyInput.trim()).apply()
-                        showGeminiKeyDialog = false
-                        snackbar.show("Gemini API key saved successfully.")
-                    },
-                    shape = RoundedCornerShape(20.dp),
-                    colors = FarmUi.buttonColors()
-                ) {
-                    Text("Save Key", fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showGeminiKeyDialog = false }) {
-                    Text("Cancel", color = FarmUi.textMuted)
                 }
             },
             containerColor = FarmUi.dialogSurface,
@@ -369,9 +323,14 @@ private fun SettingsRow(
         }
         Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
             Text(title, color = FarmUi.ink, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-            Text(subtitle, color = FarmUi.textMuted, style = MaterialTheme.typography.bodySmall)
+            Text(
+                text = subtitle,
+                color = FarmUi.textMuted,
+                style = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
-        Icon(Icons.Default.ArrowForward, contentDescription = null, tint = FarmUi.textMuted)
     }
 }
 

@@ -24,6 +24,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.samuel.farmos.ui.components.FarmAnimatedBackground
 import com.samuel.farmos.ui.components.FarmSnackbarProvider
 import com.samuel.farmos.ui.screens.AddBreedingScreen
 import com.samuel.farmos.ui.screens.AddEditAnimalScreen
@@ -104,29 +105,18 @@ fun AppNavigation(
     // be released as soon as it is on screen.
     LaunchedEffect(Unit) { onContentReady() }
 
-    val darkMode = isSystemInDarkTheme()
-    val pageGradient = if (darkMode) {
-        listOf(Color(0xFF26312A), Color(0xFF35443A), Color(0xFF4B5C4A))
-    } else {
-        listOf(Color(0xFFF7FBF5), Color(0xFFF0F7F0), Color(0xFFE8F1E7))
-    }
-    Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(pageGradient))) {
+    Box(modifier = Modifier.fillMaxSize()) {
+      FarmAnimatedBackground()
       FarmSnackbarProvider(hostState = snackbarHostState) {
         NavHost(navController = navController, startDestination = Routes.SPLASH) {
             composable(Routes.SPLASH) {
                 SplashScreen(
                     onFinished = { signedIn ->
-                        if (signedIn) {
-                            navController.navigate(Routes.HOME) {
-                                popUpTo(Routes.SPLASH) { inclusive = true }
-                            }
-                            if (!initialDestination.isNullOrBlank()) {
-                                navController.navigate(initialDestination)
-                            }
-                        } else {
-                            navController.navigate(Routes.AUTH) {
-                                popUpTo(Routes.SPLASH) { inclusive = true }
-                            }
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.SPLASH) { inclusive = true }
+                        }
+                        if (signedIn && !initialDestination.isNullOrBlank()) {
+                            navController.navigate(initialDestination)
                         }
                     }
                 )
@@ -134,15 +124,19 @@ fun AppNavigation(
 
             composable(Routes.AUTH) {
                 AuthScreen(
-                    onSkip = { navController.navigate(Routes.HOME) },
+                    onSkip = {
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
                     onAuthSuccess = { _, initialFarmName ->
                         scope.launch {
                             if (!initialFarmName.isNullOrBlank()) {
                                 farmViewModel.createFarm(initialFarmName)
                             }
-                        }
-                        navController.navigate(Routes.HOME) {
-                            popUpTo(Routes.AUTH) { inclusive = true }
+                            navController.navigate(Routes.HOME) {
+                                popUpTo(0) { inclusive = true }
+                            }
                         }
                     },
                     onNavigateToLogin = { navController.navigate(Routes.LOGIN) }
@@ -151,13 +145,17 @@ fun AppNavigation(
 
             composable(Routes.LOGIN) {
                 LoginScreen(
-                    onSkip = { navController.navigate(Routes.HOME) },
-                    onAuthSuccess = {
+                    onSkip = {
                         navController.navigate(Routes.HOME) {
-                            popUpTo(Routes.LOGIN) { inclusive = true }
+                            popUpTo(0) { inclusive = true }
                         }
                     },
-                    onNavigateToSignUp = { navController.popBackStack() }
+                    onAuthSuccess = {
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    },
+                    onNavigateToSignUp = { navController.navigate(Routes.AUTH) }
                 )
             }
 
@@ -217,21 +215,10 @@ fun AppNavigation(
                     .filter { it.type == ProductionType.MILK && it.dateMillis in todayStart until tomorrowStart }
                     .sumOf { it.quantity }
 
-                when {
-                    // Still resolving the session or the farm list.
-                    isLoading -> LoadingState()
-
-                    // A signed-in user with no farm yet: ask for one first.
-                    uid != null && farms.isEmpty() -> AddFarmScreen(
-                        onFarmCreated = { name ->
-                            scope.launch {
-                                farmViewModel.createFarm(name)
-                                navController.popBackStack()
-                            }
-                        }
-                    )
-
-                    else -> HomeScreen(
+                if (isLoading) {
+                    LoadingState()
+                } else {
+                    HomeScreen(
                         farmName = farmName,
                         tasks = tasks,
                         activeHealthCaseCount = activeHealthCases.size,
@@ -240,15 +227,42 @@ fun AppNavigation(
                         taskCount = allTasks.count { !it.completed },
                         todayMilkLitres = milkToday,
                         isGuest = uid == null,
-                        onNavigateToAnimals = { navController.navigate(Routes.ANIMALS_LIST) },
-                        onNavigateToTasks = { navController.navigate(Routes.TASKS_LIST) },
-                        onNavigateToProduction = { navController.navigate(Routes.PRODUCTION_LIST) },
-                        onNavigateToBreeding = { navController.navigate(Routes.BREEDING_LIST) },
-                        onNavigateToFeeding = { navController.navigate(Routes.FEEDING_LIST) },
-                        onNavigateToFinance = { navController.navigate(Routes.FINANCE_LIST) },
-                        onNavigateToHealth = { navController.navigate(Routes.HEALTH_LIST) },
-                        onNavigateToAi = { navController.navigate(Routes.AI) },
-                        onNavigateToSettings = { navController.navigate(Routes.SETTINGS) },
+                        onNavigateToAnimals = {
+                            if (uid == null) navController.navigate(Routes.LOGIN)
+                            else navController.navigate(Routes.ANIMALS_LIST)
+                        },
+                        onNavigateToTasks = {
+                            if (uid == null) navController.navigate(Routes.LOGIN)
+                            else navController.navigate(Routes.TASKS_LIST)
+                        },
+                        onNavigateToProduction = {
+                            if (uid == null) navController.navigate(Routes.LOGIN)
+                            else navController.navigate(Routes.PRODUCTION_LIST)
+                        },
+                        onNavigateToBreeding = {
+                            if (uid == null) navController.navigate(Routes.LOGIN)
+                            else navController.navigate(Routes.BREEDING_LIST)
+                        },
+                        onNavigateToFeeding = {
+                            if (uid == null) navController.navigate(Routes.LOGIN)
+                            else navController.navigate(Routes.FEEDING_LIST)
+                        },
+                        onNavigateToFinance = {
+                            if (uid == null) navController.navigate(Routes.LOGIN)
+                            else navController.navigate(Routes.FINANCE_LIST)
+                        },
+                        onNavigateToHealth = {
+                            if (uid == null) navController.navigate(Routes.LOGIN)
+                            else navController.navigate(Routes.HEALTH_LIST)
+                        },
+                        onNavigateToAi = {
+                            if (uid == null) navController.navigate(Routes.LOGIN)
+                            else navController.navigate(Routes.AI)
+                        },
+                        onNavigateToSettings = {
+                            if (uid == null) navController.navigate(Routes.LOGIN)
+                            else navController.navigate(Routes.SETTINGS)
+                        },
                         onNavigateToLogin = { navController.navigate(Routes.LOGIN) },
                         onNavigateToSignUp = { navController.navigate(Routes.AUTH) },
                         onToggleTask = { task -> scope.launch { farmViewModel.toggleTaskComplete(task) } },
@@ -555,12 +569,19 @@ fun AppNavigation(
                 val messages by aiViewModel.messages.collectAsStateWithLifecycle()
                 val isLoading by aiViewModel.isLoading.collectAsStateWithLifecycle()
                 val savedChats by aiViewModel.savedChats.collectAsStateWithLifecycle()
+                val executionMode by aiViewModel.executionMode.collectAsStateWithLifecycle()
+                val statusDetail by aiViewModel.statusDetail.collectAsStateWithLifecycle()
+                val actionError by aiViewModel.actionError.collectAsStateWithLifecycle()
                 val currentFarmName by farmViewModel.currentFarmName.collectAsStateWithLifecycle()
                 AiTabScreen(
                     farmName = currentFarmName,
                     messages = messages,
                     savedChats = savedChats,
                     isLoading = isLoading,
+                    executionMode = executionMode,
+                    statusDetail = statusDetail,
+                    errorMessage = actionError,
+                    onDismissError = { aiViewModel.resetState() },
                     onSendMessage = { prompt, attachment -> aiViewModel.askAi(prompt, attachment) },
                     onStartNewChat = { aiViewModel.startNewChat() },
                     onOpenSavedChat = { id -> aiViewModel.openSavedChat(id) },
