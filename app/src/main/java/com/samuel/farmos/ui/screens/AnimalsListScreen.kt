@@ -45,10 +45,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.samuel.farmos.data.Animal
@@ -133,12 +135,13 @@ fun AnimalsListScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .clipToBounds()
         ) {
             // Species filter pills
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 4.dp),
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 herdSpecies.forEach { species ->
@@ -168,7 +171,10 @@ fun AnimalsListScreen(
                             color = if (selected) selectedText else FarmUi.ink,
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                             style = MaterialTheme.typography.titleSmall,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }

@@ -451,8 +451,9 @@ fun AddEditAnimalScreen(
                 colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
                 border = BorderStroke(1.dp, FarmUi.cardBorder)
             ) {
+
                 Column(
-                    modifier = Modifier.padding(18.dp)f,
+                    modifier = Modifier.padding(18.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {

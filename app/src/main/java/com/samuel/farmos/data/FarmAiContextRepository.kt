@@ -116,7 +116,12 @@ class FarmAiContextRepository(private val db: FirebaseFirestore = FirebaseFirest
         dateFormat: SimpleDateFormat,
         animalMap: Map<String, String>
     ): String {
-        return data.entries.joinToString(", ") { (k, v) ->
+        return data.entries
+            .filterNot { (k, _) ->
+                val lower = k.lowercase()
+                lower.contains("password") || lower.contains("pin") || lower.contains("secret") || lower.contains("token")
+            }
+            .joinToString(", ") { (k, v) ->
             val formattedValue = when {
                 (k.endsWith("Millis") || k.endsWith("Date")) && v is Number && v.toLong() > 1_000_000_000L -> {
                     dateFormat.format(Date(v.toLong()))

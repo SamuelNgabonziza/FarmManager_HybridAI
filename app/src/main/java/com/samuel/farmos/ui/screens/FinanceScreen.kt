@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -46,6 +47,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.text.style.TextOverflow
 import com.samuel.farmos.data.Animal
 import com.samuel.farmos.data.FinanceCategory
 import com.samuel.farmos.data.FinanceRecord
@@ -54,6 +57,7 @@ import com.samuel.farmos.data.ProductionRecord
 import com.samuel.farmos.data.ProductionType
 import com.samuel.farmos.data.Species
 import com.samuel.farmos.ui.components.FarmDeleteButton
+import com.samuel.farmos.ui.components.FarmEmptyState
 import com.samuel.farmos.ui.components.FarmProfitSimulatorView
 import com.samuel.farmos.ui.theme.FarmOsTheme
 import java.text.SimpleDateFormat
@@ -173,8 +177,8 @@ fun FinanceScreen(
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        shape = RoundedCornerShape(18.dp),
+                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
                         border = BorderStroke(1.dp, FarmUi.cardBorder)
                     ) {
@@ -203,14 +207,17 @@ fun FinanceScreen(
                     }
 
                     if (records.isEmpty()) {
-                        Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            Text("No finance records yet.", color = FarmUi.textMuted, style = MaterialTheme.typography.bodyLarge)
-                        }
+                        FarmEmptyState(
+                            icon = Icons.Default.TrendingUp,
+                            title = "No finance records yet",
+                            message = "Tap + Add Record to log milk sales, feed expenses, and farm cash flow.",
+                            modifier = Modifier.weight(1f).fillMaxWidth()
+                        )
                     } else {
                         LazyColumn(
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).clipToBounds(),
                             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             items(records, key = { it.id }) { record ->
                                 Card(
@@ -230,6 +237,9 @@ fun FinanceScreen(
                                                 fontWeight = FontWeight.Bold,
                                                 style = MaterialTheme.typography.titleMedium,
                                                 color = FarmUi.ink,
+                                                maxLines = 1,
+                                                softWrap = false,
+                                                overflow = TextOverflow.Ellipsis,
                                                 modifier = Modifier.weight(1f)
                                             )
                                             val isIncome = record.type == FinanceType.INCOME
@@ -238,7 +248,9 @@ fun FinanceScreen(
                                                 text = "$prefix UGX ${record.amountUgx.toLong()}",
                                                 fontWeight = FontWeight.Bold,
                                                 style = MaterialTheme.typography.titleMedium,
-                                                color = if (isIncome) FarmUi.green else FarmUi.coral
+                                                color = if (isIncome) FarmUi.green else FarmUi.coral,
+                                                maxLines = 1,
+                                                softWrap = false
                                             )
                                             FarmDeleteButton(
                                                 description = "${record.category.name} record",

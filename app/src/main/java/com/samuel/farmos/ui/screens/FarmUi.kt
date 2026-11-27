@@ -54,7 +54,7 @@ import java.util.Date
 import java.util.Locale
 
 object FarmUi {
-    val cardShape = RoundedCornerShape(18.dp)
+    val cardShape = RoundedCornerShape(16.dp)
     val fieldShape = RoundedCornerShape(12.dp)
     val pillShape = RoundedCornerShape(50.dp)
 

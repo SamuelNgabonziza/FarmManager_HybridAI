@@ -133,6 +133,22 @@ object NotificationHelper {
         )
     }
 
+    fun showAiInsightAlert(
+        context: Context,
+        notificationId: Int,
+        title: String,
+        message: String
+    ) {
+        showNotification(
+            context = context,
+            channelId = CHANNEL_TASKS,
+            notificationId = notificationId,
+            title = title,
+            message = message,
+            destination = Routes.AI
+        )
+    }
+
     private fun showNotification(
         context: Context,
         channelId: String,
@@ -162,6 +178,7 @@ object NotificationHelper {
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(message)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(message))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setContentIntent(pendingIntent)

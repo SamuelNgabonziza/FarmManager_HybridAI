@@ -36,13 +36,16 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.samuel.farmos.data.BreedingEventType
 import com.samuel.farmos.data.BreedingRecord
 import com.samuel.farmos.ui.components.FarmDeleteButton
+import com.samuel.farmos.ui.components.FarmEmptyState
 import com.samuel.farmos.ui.components.GestationProgressRing
 import com.samuel.farmos.ui.theme.FarmOsTheme
 import java.text.SimpleDateFormat
@@ -88,13 +91,16 @@ fun BreedingScreen(
             color = FarmUi.background
         ) {
             if (records.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No breeding records yet.", color = FarmUi.textMuted, style = MaterialTheme.typography.bodyLarge)
-                }
+                FarmEmptyState(
+                    icon = Icons.Default.CalendarMonth,
+                    title = "No breeding records yet",
+                    message = "Tap + Add Event to track matings, pregnancy checks, and expected birth dates."
+                )
             } else {
                 LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                    modifier = Modifier.fillMaxSize().clipToBounds(),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 96.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(records, key = { it.id }) { record ->
                         Card(
@@ -127,7 +133,10 @@ fun BreedingScreen(
                                             text = record.eventType.name,
                                             fontWeight = FontWeight.Bold,
                                             style = MaterialTheme.typography.titleMedium,
-                                            color = FarmUi.purple
+                                            color = FarmUi.purple,
+                                            maxLines = 1,
+                                            softWrap = false,
+                                            overflow = TextOverflow.Ellipsis
                                         )
                                         val dateStr = SimpleDateFormat("d MMM yyyy", Locale.getDefault()).format(Date(record.eventDateMillis))
                                         Text(

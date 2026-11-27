@@ -22,10 +22,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.samuel.farmos.data.Task
+import com.samuel.farmos.data.TaskCategory
 import com.samuel.farmos.ui.components.FarmAnimatedBackground
 import com.samuel.farmos.ui.components.FarmSnackbarProvider
+import com.samuel.farmos.ui.components.FloatingHybridAiOrb
 import com.samuel.farmos.ui.screens.AddBreedingScreen
 import com.samuel.farmos.ui.screens.AddEditAnimalScreen
 import com.samuel.farmos.ui.screens.AddEditTaskScreen
@@ -104,6 +108,9 @@ fun AppNavigation(
     // The splash screen is the first thing composed, so the platform splash can
     // be released as soon as it is on screen.
     LaunchedEffect(Unit) { onContentReady() }
+
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
     Box(modifier = Modifier.fillMaxSize()) {
       FarmAnimatedBackground()
@@ -271,7 +278,15 @@ fun AppNavigation(
                         onQuickSaveMilk = { record -> scope.launch { farmViewModel.saveProduction(record) } },
                         onQuickSaveHealth = { case -> scope.launch { farmViewModel.saveHealthCase(case) } },
                         onQuickSaveExpense = { expense -> scope.launch { farmViewModel.saveFinance(expense) } },
-                        onQuickSaveTask = { task -> scope.launch { farmViewModel.saveTask(task) } }
+                        onQuickSaveTask = { task -> scope.launch { farmViewModel.saveTask(task) } },
+                        onAskAiWithPrompt = { prompt ->
+                            if (uid == null) {
+                                navController.navigate(Routes.LOGIN)
+                            } else {
+                                navController.navigate(Routes.AI)
+                                aiViewModel.askAi(prompt, null)
+                            }
+                        }
                     )
                 }
             }
@@ -586,11 +601,38 @@ fun AppNavigation(
                     onStartNewChat = { aiViewModel.startNewChat() },
                     onOpenSavedChat = { id -> aiViewModel.openSavedChat(id) },
                     onDeleteSavedChat = { id -> aiViewModel.deleteSavedChat(id) },
+                    onSaveAsTask = { adviceText ->
+                        val title = adviceText.lineSequence()
+                            .firstOrNull { it.isNotBlank() }
+                            ?.trim()
+                            ?.take(80)
+                            ?: "Follow up on AI advice"
+                        scope.launch {
+                            farmViewModel.saveTask(
+                                Task(
+                                    title = title,
+                                    category = TaskCategory.OTHER,
+                                    dueDateMillis = System.currentTimeMillis()
+                                )
+                            )
+                        }
+                    },
                     onBack = { navController.popBackStack() }
                 )
             }
         }
       }
+
+        val showAiOrb = currentRoute != null &&
+            currentRoute !in listOf(Routes.SPLASH, Routes.LOGIN, Routes.AUTH, Routes.AI)
+        if (showAiOrb) {
+            FloatingHybridAiOrb(
+                onClick = {
+                    if (uid == null) navController.navigate(Routes.LOGIN)
+                    else navController.navigate(Routes.AI)
+                }
+            )
+        }
 
         SnackbarHost(
             hostState = snackbarHostState,

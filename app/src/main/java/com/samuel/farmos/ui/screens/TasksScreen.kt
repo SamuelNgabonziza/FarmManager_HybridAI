@@ -65,6 +65,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
@@ -271,12 +272,13 @@ fun TasksScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .clipToBounds()
         ) {
             // Today on the farm banner card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                    .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 6.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
                 border = BorderStroke(1.dp, FarmUi.cardBorder)

@@ -36,6 +36,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddComment
+import androidx.compose.material.icons.filled.AddTask
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
@@ -112,7 +113,8 @@ fun AiTabScreen(
     executionMode: String = "HYBRID_READY",
     statusDetail: String = "Hybrid AI ready (On-Device preferred, Cloud fallback)",
     errorMessage: String? = null,
-    onDismissError: () -> Unit = {}
+    onDismissError: () -> Unit = {},
+    onSaveAsTask: (String) -> Unit = {}
 ) {
     val isDark = isSystemInDarkTheme()
 
@@ -249,16 +251,18 @@ fun AiTabScreen(
                         Spacer(Modifier.width(8.dp))
                         Column {
                             Text(
-                                "Farm Assistant",
+                                "FarmOS Hybrid AI",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
                                 color = topBarTitleColor
                             )
                             Text(
-                                displayFarm,
+                                "Firebase AI Logic • On-Device + Cloud",
                                 style = MaterialTheme.typography.bodySmall,
-                                fontSize = 13.sp,
-                                color = topBarSubtitleColor
+                                fontSize = 12.sp,
+                                color = topBarSubtitleColor,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -376,22 +380,70 @@ fun AiTabScreen(
                                     )
                                 }
                             }
-                            Spacer(Modifier.height(24.dp))
+                            Spacer(Modifier.height(20.dp))
                             Text(
-                                "What can I help you with at the farm?",
+                                "FarmOS Hybrid AI",
                                 color = helpTitleColor,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 24.sp,
+                                fontSize = 26.sp,
                                 textAlign = TextAlign.Center
                             )
-                            Spacer(Modifier.height(12.dp))
+                            Spacer(Modifier.height(6.dp))
                             Text(
-                                text = "Ask about livestock, feed, or\nmanaging the farm.",
-                                color = helpSubtitleColor,
-                                fontSize = 16.sp,
-                                textAlign = TextAlign.Center,
-                                lineHeight = 23.sp
+                                text = "Firebase AI Logic • On-Device + Cloud",
+                                color = topBarIconTint,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                textAlign = TextAlign.Center
                             )
+                            Spacer(Modifier.height(10.dp))
+                            Text(
+                                text = "Ask about livestock, feed, or managing the farm.",
+                                color = helpSubtitleColor,
+                                fontSize = 15.sp,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 22.sp
+                            )
+                            Spacer(Modifier.height(24.dp))
+
+                            // 4 one-tap quick farm prompt cards that send immediately
+                            val quickPrompts = listOf(
+                                "Diagnose Livestock Symptom" to "Help me diagnose a livestock symptom and outline quarantine, hydration, and vet check steps.",
+                                "Boost Daily Milk Yield" to "How can I boost daily milk yield for my dairy cows using nutrition, water, and milking routine benchmarks?",
+                                "Feed Ration & Cost Check" to "Review a balanced dairy/livestock feed ration plan to improve output while controlling feed costs.",
+                                "Heat Stress & Water Plan" to "Give me a heat stress (THI) and water intake action plan to protect livestock productivity."
+                            )
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                quickPrompts.chunked(2).forEach { pair ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        pair.forEach { (title, prompt) ->
+                                            Surface(
+                                                shape = RoundedCornerShape(16.dp),
+                                                color = chipBg,
+                                                border = BorderStroke(1.dp, chipBorder),
+                                                modifier = Modifier
+                                                    .weight(1f)
+                                                    .clickable { onSendMessage(prompt, null) }
+                                            ) {
+                                                Text(
+                                                    text = title,
+                                                    color = chipTextColor,
+                                                    style = MaterialTheme.typography.labelLarge,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    lineHeight = 18.sp,
+                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -405,66 +457,55 @@ fun AiTabScreen(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
                     ) {
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(if (isUser) 0.82f else 0.92f),
-                            shape = RoundedCornerShape(
-                                topStart = 18.dp,
-                                topEnd = 18.dp,
-                                bottomStart = if (isUser) 18.dp else 4.dp,
-                                bottomEnd = if (isUser) 4.dp else 18.dp
-                            ),
-                            color = currentBubbleBg,
-                            border = if (!isUser) BorderStroke(1.dp, assistantBubbleBorder) else null
-                        ) {
-                            Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
-                                val displayText = if (!isUser) {
-                                    msg.text
-                                        .replace(Regex("""\*\*(.*?)\*\*"""), "$1")
-                                        .replace(Regex("""\*(.*?)\*"""), "$1")
-                                        .replace(Regex("""(?m)^#{1,6}\s*"""), "")
-                                        .replace(Regex("""(?m)^\*\s+"""), "• ")
-                                } else {
-                                    msg.text
-                                }
-                                Text(
-                                    text = displayText,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    fontSize = 15.sp,
-                                    color = currentBubbleText
-                                )
-                                msg.attachmentName?.let {
-                                    Spacer(Modifier.height(6.dp))
+                        if (isUser) {
+                            Surface(
+                                modifier = Modifier.fillMaxWidth(0.82f),
+                                shape = RoundedCornerShape(
+                                    topStart = 18.dp,
+                                    topEnd = 18.dp,
+                                    bottomStart = 18.dp,
+                                    bottomEnd = 4.dp
+                                ),
+                                color = userBubbleBg
+                            ) {
+                                Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                                     Text(
-                                        "📷 $it",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = if (isUser) userBubbleText else topBarIconTint,
-                                        fontWeight = FontWeight.SemiBold
+                                        text = msg.text,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontSize = 15.sp,
+                                        color = userBubbleText
+                                    )
+                                    msg.attachmentName?.let {
+                                        Spacer(Modifier.height(6.dp))
+                                        Text(
+                                            "📷 $it",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = userBubbleText,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                }
+                            }
+
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(top = 2.dp, end = 4.dp)
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        clipboardManager.setText(AnnotatedString(msg.text))
+                                        snackbar.show("Copied to clipboard")
+                                    },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.ContentCopy,
+                                        contentDescription = "Copy message",
+                                        tint = topBarSubtitleColor,
+                                        modifier = Modifier.size(15.dp)
                                     )
                                 }
-                            }
-                        }
-
-                        // Gemini-style Copy & Edit actions
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(top = 2.dp, start = 4.dp, end = 4.dp)
-                        ) {
-                            IconButton(
-                                onClick = {
-                                    clipboardManager.setText(AnnotatedString(msg.text))
-                                    snackbar.show("Copied to clipboard")
-                                },
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.ContentCopy,
-                                    contentDescription = "Copy message",
-                                    tint = topBarSubtitleColor,
-                                    modifier = Modifier.size(15.dp)
-                                )
-                            }
-                            if (isUser) {
                                 IconButton(
                                     onClick = { promptText = msg.text },
                                     modifier = Modifier.size(28.dp)
@@ -475,6 +516,92 @@ fun AiTabScreen(
                                         tint = topBarSubtitleColor,
                                         modifier = Modifier.size(15.dp)
                                     )
+                                }
+                            }
+                        } else {
+                            // Unboxed Google Gemini-style assistant response directly on the background
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp, vertical = 4.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    modifier = Modifier.padding(bottom = 6.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.AutoAwesome,
+                                        contentDescription = null,
+                                        tint = topBarIconTint,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = "FarmOS Hybrid AI",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = topBarIconTint
+                                    )
+                                }
+                                val displayText = msg.text
+                                    .replace(Regex("""\*\*(.*?)\*\*"""), "$1")
+                                    .replace(Regex("""\*(.*?)\*"""), "$1")
+                                    .replace(Regex("""(?m)^#{1,6}\s*"""), "")
+                                    .replace(Regex("""(?m)^\*\s+"""), "• ")
+                                Text(
+                                    text = displayText,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontSize = 15.sp,
+                                    lineHeight = 23.sp,
+                                    color = assistantBubbleText
+                                )
+                                Spacer(Modifier.height(6.dp))
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    TextButton(
+                                        onClick = {
+                                            onSaveAsTask(displayText)
+                                            snackbar.show("Saved as farm task")
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.AddTask,
+                                            contentDescription = "Save as Task",
+                                            tint = topBarIconTint,
+                                            modifier = Modifier.size(15.dp)
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(
+                                            "Save as Task",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = topBarIconTint,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
+                                    TextButton(
+                                        onClick = {
+                                            clipboardManager.setText(AnnotatedString(displayText))
+                                            snackbar.show("Copied to clipboard")
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Default.ContentCopy,
+                                            contentDescription = "Copy reply",
+                                            tint = topBarSubtitleColor,
+                                            modifier = Modifier.size(15.dp)
+                                        )
+                                        Spacer(Modifier.width(4.dp))
+                                        Text(
+                                            "Copy",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = topBarSubtitleColor,
+                                            fontWeight = FontWeight.SemiBold
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -982,6 +1109,7 @@ private fun HybridInferenceStatusBar(
         isOnDevice -> "ON-DEVICE"
         executionMode.equals("IN_CLOUD", ignoreCase = true) -> "IN CLOUD"
         isCloud -> "CLOUD FALLBACK"
+        executionMode.contains("OFFLINE", ignoreCase = true) -> "OFFLINE LOCAL"
         isError -> "ERROR"
         else -> "HYBRID AI"
     }
@@ -1037,7 +1165,9 @@ private fun HybridInferenceStatusBar(
                         color = accentColor,
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        maxLines = 1
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }

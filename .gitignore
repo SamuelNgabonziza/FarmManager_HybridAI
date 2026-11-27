@@ -25,4 +25,9 @@ offline_properties.properties
 resolution-tracking-state.bin
 .kotlin/
 .android-local/
+*.mp4
+frames_dark/
+frames_light/
+extracted_videos/
+farmshots-review-*.jpg
 

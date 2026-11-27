@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.Assignment
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
@@ -30,22 +32,32 @@ import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,6 +67,7 @@ import com.samuel.farmos.data.HealthCase
 import com.samuel.farmos.data.ProductionRecord
 import com.samuel.farmos.data.Task
 import com.samuel.farmos.ui.theme.FarmOsTheme
+import kotlinx.coroutines.launch
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,11 +98,89 @@ fun HomeScreen(
     onQuickSaveMilk: (ProductionRecord) -> Unit = {},
     onQuickSaveHealth: (HealthCase) -> Unit = {},
     onQuickSaveExpense: (FinanceRecord) -> Unit = {},
-    onQuickSaveTask: (Task) -> Unit = {}
+    onQuickSaveTask: (Task) -> Unit = {},
+    onAskAiWithPrompt: (String) -> Unit = {}
 ) {
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val drawerScope = rememberCoroutineScope()
+
+    val navigateFromDrawer: (() -> Unit) -> Unit = { action ->
+        drawerScope.launch { drawerState.close() }
+        action()
+    }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet(
+                drawerContainerColor = FarmUi.surface,
+                drawerContentColor = FarmUi.ink
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 20.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        FarmLogo(40.dp)
+                        Spacer(Modifier.width(12.dp))
+                        Column {
+                            Text(
+                                text = farmName?.takeIf { it.isNotBlank() } ?: "FarmOS",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = FarmUi.green
+                            )
+                            Text(
+                                text = "Firebase AI Logic • Hybrid",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = FarmUi.textMuted
+                            )
+                        }
+                    }
+                }
+                HorizontalDivider(color = FarmUi.cardBorder)
+                Spacer(Modifier.height(8.dp))
+
+                val drawerItems = listOf(
+                    Triple("Farm Overview", Icons.Default.Home) { },
+                    Triple("FarmOS Hybrid AI", Icons.Default.AutoAwesome, onNavigateToAi),
+                    Triple("Animals", Icons.Default.Pets, onNavigateToAnimals),
+                    Triple("Today's Tasks", Icons.Default.Assignment, onNavigateToTasks),
+                    Triple("Production & Yields", Icons.Default.ShowChart, onNavigateToProduction),
+                    Triple("Breeding", Icons.Default.CalendarMonth, onNavigateToBreeding),
+                    Triple("Feeding", Icons.Default.Restaurant, onNavigateToFeeding),
+                    Triple("Health", Icons.Default.Favorite, onNavigateToHealth),
+                    Triple("Farm Finances", Icons.Default.TrendingUp, onNavigateToFinance),
+                    Triple("Settings", Icons.Default.Settings, onNavigateToSettings)
+                )
+                drawerItems.forEachIndexed { idx, (label, icon, action) ->
+                    NavigationDrawerItem(
+                        label = { Text(label, fontWeight = FontWeight.SemiBold) },
+                        selected = idx == 0,
+                        onClick = { navigateFromDrawer(action) },
+                        icon = { Icon(icon, contentDescription = null) },
+                        colors = NavigationDrawerItemDefaults.colors(
+                            selectedContainerColor = FarmUi.iconMint,
+                            selectedIconColor = FarmUi.green,
+                            selectedTextColor = FarmUi.green,
+                            unselectedIconColor = FarmUi.textMuted,
+                            unselectedTextColor = FarmUi.ink
+                        ),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 2.dp)
+                    )
+                }
+            }
+        }
+    ) {
     Scaffold(
         topBar = {
             TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = { drawerScope.launch { drawerState.open() } }) {
+                        Icon(Icons.Default.Menu, contentDescription = "Open menu", tint = FarmUi.green)
+                    }
+                },
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         FarmLogo(36.dp)
@@ -137,9 +228,10 @@ fun HomeScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .padding(innerPadding)
+                .clipToBounds(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
                 WelcomeCard(
@@ -187,6 +279,68 @@ fun HomeScreen(
                         iconBackground = FarmUi.iconWarm,
                         borderColor = FarmUi.cardBorder
                     )
+                }
+            }
+
+            if (!isGuest) {
+                item {
+                    val insightPrompt = when {
+                        activeHealthCaseCount > 0 ->
+                            "Review my $activeHealthCaseCount active livestock health case(s) and give immediate care, biosecurity, and vet follow-up advice."
+                        birthsDueSoonCount > 0 ->
+                            "I have $birthsDueSoonCount livestock birth(s) due within 7 days. Give me a calving/kidding preparation checklist."
+                        taskCount > 0 ->
+                            "Review my $taskCount open farm tasks today and prioritize what should be done first."
+                        else ->
+                            "Analyze my current farm records and suggest ways to improve milk yield, feed efficiency, and profitability."
+                    }
+                    val insightLabel = when {
+                        activeHealthCaseCount > 0 -> "🩺 $activeHealthCaseCount active health case(s) — Tap for AI vet advice"
+                        birthsDueSoonCount > 0 -> "🐄 $birthsDueSoonCount birth(s) due soon — Tap for AI prep plan"
+                        taskCount > 0 -> "📋 $taskCount open task(s) — Tap for AI priority plan"
+                        else -> "✨ Tap for proactive FarmOS Hybrid AI insights"
+                    }
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(role = Role.Button) { onAskAiWithPrompt(insightPrompt) },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = CardDefaults.cardColors(containerColor = FarmUi.surfaceMint),
+                        border = BorderStroke(1.dp, FarmUi.green.copy(alpha = 0.35f))
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .background(FarmUi.iconMint, RoundedCornerShape(10.dp)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = FarmUi.green, modifier = Modifier.size(18.dp))
+                            }
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Hybrid AI Insight",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = FarmUi.green,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = insightLabel,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = FarmUi.ink,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
                 }
             }
 
@@ -280,7 +434,7 @@ fun HomeScreen(
                         modifier = Modifier.weight(1f)
                     )
                     HomeToolCard(
-                        title = "Ask AI",
+                        title = "FarmOS Hybrid AI",
                         icon = Icons.Default.AutoAwesome,
                         iconColor = FarmUi.orange,
                         iconBackground = FarmUi.iconWarm,
@@ -306,6 +460,7 @@ fun HomeScreen(
                 }
             }
         }
+    }
     }
 }
 
@@ -421,15 +576,15 @@ private fun HomeToolCard(
 ) {
     Card(
         modifier = modifier.clickable(role = Role.Button, onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = FarmUi.surface),
         border = BorderStroke(1.dp, outline)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Box(
                 modifier = Modifier
@@ -439,7 +594,15 @@ private fun HomeToolCard(
             ) {
                 Icon(icon, contentDescription = null, tint = iconColor, modifier = Modifier.size(18.dp))
             }
-            Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = FarmUi.ink)
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold,
+                color = FarmUi.ink,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

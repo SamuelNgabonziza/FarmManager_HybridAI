@@ -16,8 +16,10 @@ import com.samuel.farmos.data.FarmRepository
 import com.samuel.farmos.data.HealthCase
 import com.samuel.farmos.data.HealthCaseStatus
 import com.samuel.farmos.data.ProductionRecord
+import com.samuel.farmos.data.ProductionType
 import com.samuel.farmos.data.SessionManager
 import com.samuel.farmos.data.Task
+import com.samuel.farmos.notifications.NotificationHelper
 import com.samuel.farmos.notifications.TaskReminderScheduler
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -315,6 +317,18 @@ class FarmViewModel(
         val uid = currentUid() ?: return
         val farm = activeFarm() ?: return
         runCatching { repository.addProductionRecord(uid, farm.id, record) }
+            .onSuccess { id ->
+                if (record.type == ProductionType.MILK && record.quantity in 0.01..2.0) {
+                    context?.let { ctx ->
+                        NotificationHelper.showMilkingAlert(
+                            context = ctx,
+                            notificationId = id.hashCode(),
+                            title = "Low Milk Yield Logged 🥛",
+                            message = "${record.quantity} L recorded. Check feed ration, hydration, or ask FarmOS Hybrid AI."
+                        )
+                    }
+                }
+            }
             .onFailure { _errorMessage.value = "Could not save production record: ${it.message}" }
     }
 
@@ -329,6 +343,20 @@ class FarmViewModel(
         val uid = currentUid() ?: return
         val farm = activeFarm() ?: return
         runCatching { repository.addBreedingRecord(uid, farm.id, record) }
+            .onSuccess { id ->
+                val due = record.expectedDueDateMillis
+                val now = System.currentTimeMillis()
+                if (due != null && due in now..(now + SEVEN_DAYS_MS)) {
+                    context?.let { ctx ->
+                        NotificationHelper.showBreedingAlert(
+                            context = ctx,
+                            notificationId = id.hashCode(),
+                            title = "Upcoming Birth Alert 🐄",
+                            message = "Breeding event (${record.eventType.name}) has a due date within 7 days. Prepare calving area and check FarmOS Hybrid AI."
+                        )
+                    }
+                }
+            }
             .onFailure { _errorMessage.value = "Could not save breeding record: ${it.message}" }
     }
 
@@ -371,6 +399,18 @@ class FarmViewModel(
         val uid = currentUid() ?: return
         val farm = activeFarm() ?: return
         runCatching { repository.addHealthCase(uid, farm.id, healthCase) }
+            .onSuccess { id ->
+                if (healthCase.status == HealthCaseStatus.ACTIVE) {
+                    context?.let { ctx ->
+                        NotificationHelper.showHealthAlert(
+                            context = ctx,
+                            notificationId = id.hashCode(),
+                            title = "Active Health Case Logged 🩺",
+                            message = "${healthCase.mainComplaint}. Tap to review treatment or ask FarmOS Hybrid AI."
+                        )
+                    }
+                }
+            }
             .onFailure { _errorMessage.value = "Could not save health case: ${it.message}" }
     }
 

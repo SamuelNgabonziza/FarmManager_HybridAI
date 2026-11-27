@@ -46,15 +46,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.samuel.farmos.data.Animal
 import com.samuel.farmos.data.HealthCase
 import com.samuel.farmos.data.HealthCaseStatus
 import com.samuel.farmos.ui.components.CowSymptomDiagnosticView
+import com.samuel.farmos.ui.components.FarmEmptyState
 import com.samuel.farmos.ui.theme.FarmOsTheme
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -156,16 +159,16 @@ fun HealthScreen(
                 }
 
                 if (cases.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("No active health cases.", color = FarmUi.textMuted, style = MaterialTheme.typography.bodyLarge)
-                    }
+                    FarmEmptyState(
+                        icon = Icons.Default.Favorite,
+                        title = "No active health cases",
+                        message = "Tap + Report Illness to log symptoms, treatments, or vet follow-ups."
+                    )
                 } else {
                     LazyColumn(
+                        modifier = Modifier.fillMaxSize().clipToBounds(),
                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 96.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(cases, key = { it.id }) { healthCase ->
                             val isActive = healthCase.status == HealthCaseStatus.ACTIVE
@@ -173,7 +176,7 @@ fun HealthScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable(role = Role.Button) { onCaseDetail(healthCase.id) },
-                                shape = RoundedCornerShape(18.dp),
+                                shape = RoundedCornerShape(16.dp),
                                 colors = CardDefaults.cardColors(containerColor = if (isActive) FarmUi.surfaceTeal else FarmUi.surface),
                                 border = BorderStroke(1.dp, if (isActive) FarmUi.teal.copy(alpha = 0.35f) else FarmUi.cardBorder)
                             ) {
@@ -223,6 +226,9 @@ fun HealthScreen(
                                                 style = MaterialTheme.typography.labelSmall,
                                                 fontWeight = FontWeight.Bold,
                                                 color = statusColor,
+                                                maxLines = 1,
+                                                softWrap = false,
+                                                overflow = TextOverflow.Ellipsis,
                                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)
                                             )
                                         }

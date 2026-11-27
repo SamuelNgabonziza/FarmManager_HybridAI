@@ -268,7 +268,7 @@ fun LivestockHeatStressCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (stressLevel == HeatStressLevel.COMFORT) "🥛 Yield Status" else "📉 Est. Milk Impact",
+                            text = if (stressLevel == HeatStressLevel.COMFORT) "🥛 Yield Status" else "📉 Est. Milk Loss",
                             style = MaterialTheme.typography.bodySmall,
                             fontWeight = FontWeight.SemiBold,
                             color = FarmUi.ink
@@ -324,7 +324,7 @@ fun LivestockHeatStressCard(
 
                     // 2. Weather Preset Chips
                     Text(
-                        text = "Quick Weather Scenarios:",
+                        text = "Weather Scenarios",
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.Bold,
                         color = FarmUi.textMuted
@@ -377,7 +377,7 @@ fun LivestockHeatStressCard(
                             Icon(Icons.Default.Thermostat, contentDescription = null, tint = FarmUi.coral, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "Ambient Temperature",
+                                text = "Temperature",
                                 style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = FarmUi.ink

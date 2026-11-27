@@ -42,15 +42,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.samuel.farmos.data.ProductionRecord
 import com.samuel.farmos.data.ProductionType
 import com.samuel.farmos.ui.components.FarmDeleteButton
+import com.samuel.farmos.ui.components.FarmEmptyState
 import com.samuel.farmos.ui.components.LivestockHeatStressCard
 import com.samuel.farmos.ui.theme.FarmOsTheme
 import java.text.SimpleDateFormat
@@ -113,8 +116,8 @@ fun ProductionScreen(
         containerColor = FarmUi.background
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(innerPadding),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 100.dp),
+            modifier = Modifier.fillMaxSize().padding(innerPadding).clipToBounds(),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             item {
@@ -136,11 +139,14 @@ fun ProductionScreen(
                     ) {
                         Text(
                             text = "🥛 Daily Milk",
-                            modifier = Modifier.padding(vertical = 12.dp),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
                             color = if (milkSelected) selectedText else FarmUi.ink,
                             fontWeight = if (milkSelected) FontWeight.Bold else FontWeight.Medium,
                             style = MaterialTheme.typography.titleSmall,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
@@ -154,11 +160,14 @@ fun ProductionScreen(
                     ) {
                         Text(
                             text = "⚖️ Animal Weight",
-                            modifier = Modifier.padding(vertical = 12.dp),
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
                             color = if (!milkSelected) selectedText else FarmUi.ink,
                             fontWeight = if (!milkSelected) FontWeight.Bold else FontWeight.Medium,
                             style = MaterialTheme.typography.titleSmall,
-                            textAlign = TextAlign.Center
+                            textAlign = TextAlign.Center,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -198,33 +207,23 @@ fun ProductionScreen(
             }
             if (selectedRecords.isEmpty()) {
                 item {
-                    Column(
-                        modifier = Modifier.fillMaxWidth().height(260.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            if (selectedType == ProductionType.MILK) Icons.Default.LocalDrink else Icons.Default.ShowChart,
-                            contentDescription = null,
-                            tint = FarmUi.textMuted.copy(alpha = 0.6f),
-                            modifier = Modifier.size(44.dp)
-                        )
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            if (selectedType == ProductionType.MILK) "No milk records yet" else "No animal weights yet",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = FarmUi.ink
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            "Tap + below to add your first ${if (selectedType == ProductionType.MILK) "milk log" else "weight record"}.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = FarmUi.textMuted
-                        )
-                    }
+                    FarmEmptyState(
+                        icon = if (selectedType == ProductionType.MILK) Icons.Default.LocalDrink else Icons.Default.ShowChart,
+                        title = if (selectedType == ProductionType.MILK) "No milk records yet" else "No weight records yet",
+                        message = "Tap + below to add a ${if (selectedType == ProductionType.MILK) "milk log" else "weight record"}.",
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)
+                    )
                 }
             } else {
+                item {
+                    Text(
+                        text = if (selectedType == ProductionType.MILK) "Milk Logs" else "Weight Logs",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = FarmUi.green,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
                 items(selectedRecords, key = { it.id }) { record ->
                     Card(
                         shape = RoundedCornerShape(16.dp),
@@ -298,8 +297,22 @@ private fun SummaryCard(
             modifier = Modifier.padding(14.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Text(title, style = MaterialTheme.typography.bodySmall, color = FarmUi.textMuted)
-            Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = textColor)
+            Text(
+                title,
+                style = MaterialTheme.typography.bodySmall,
+                color = FarmUi.textMuted,
+                maxLines = 1,
+                softWrap = false,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                value,
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = textColor,
+                maxLines = 1,
+                softWrap = false
+            )
         }
     }
 }

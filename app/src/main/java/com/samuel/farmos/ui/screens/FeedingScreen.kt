@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.samuel.farmos.data.Animal
 import com.samuel.farmos.data.FeedingRecord
 import com.samuel.farmos.ui.components.FarmDeleteButton
+import com.samuel.farmos.ui.components.FarmEmptyState
 import com.samuel.farmos.ui.theme.FarmOsTheme
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -52,6 +54,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.text.style.TextOverflow
 import com.samuel.farmos.ui.components.FeedRationCalculatorView
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -135,7 +139,7 @@ fun FeedingScreen(
     ) { padding ->
         if (selectedTab == 1) {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding),
+                modifier = Modifier.fillMaxSize().padding(padding).clipToBounds(),
                 contentPadding = PaddingValues(16.dp)
             ) {
                 item {
@@ -144,7 +148,7 @@ fun FeedingScreen(
             }
         } else {
             LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding),
+                modifier = Modifier.fillMaxSize().padding(padding).clipToBounds(),
                 contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 96.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -167,9 +171,12 @@ fun FeedingScreen(
             }
             if (records.isEmpty()) {
                 item {
-                    Box(Modifier.fillMaxWidth().height(260.dp), contentAlignment = Alignment.Center) {
-                        Text("No feeding records yet.", color = FarmUi.textMuted, style = MaterialTheme.typography.bodyLarge)
-                    }
+                    FarmEmptyState(
+                        icon = Icons.Default.Restaurant,
+                        title = "No feeding records yet",
+                        message = "Tap + Log Feed to record daily rations and feed costs.",
+                        modifier = Modifier.fillMaxWidth().height(260.dp)
+                    )
                 }
             } else {
                 items(records, key = { it.id }) { record ->
@@ -178,7 +185,7 @@ fun FeedingScreen(
                         ?.takeIf(String::isNotBlank) ?: "General (whole farm)"
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(18.dp),
+                        shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(containerColor = feedingCardBg)
                     ) {
                         Column(Modifier.padding(start = 16.dp, top = 14.dp, end = 8.dp, bottom = 14.dp)) {
@@ -188,12 +195,17 @@ fun FeedingScreen(
                                     Modifier.weight(1f),
                                     color = if (isSystemInDarkTheme()) Color(0xFF80E3A7) else Color.White,
                                     fontWeight = FontWeight.Bold,
-                                    style = MaterialTheme.typography.titleMedium
+                                    style = MaterialTheme.typography.titleMedium,
+                                    maxLines = 1,
+                                    softWrap = false,
+                                    overflow = TextOverflow.Ellipsis
                                 )
                                 Text(
                                     "${if (record.quantityKg % 1.0 == 0.0) record.quantityKg.toInt().toString() else record.quantityKg} kg",
                                     color = Color.White,
-                                    fontWeight = FontWeight.SemiBold
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    softWrap = false
                                 )
                                 FarmDeleteButton(
                                     description = "${record.feedType} feeding record",
