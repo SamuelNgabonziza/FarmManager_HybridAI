@@ -11,7 +11,7 @@ Smallholder and commercial livestock farmers frequently operate in rural areas u
 
 - **On-Device First (`InferenceMode.PREFER_ON_DEVICE`):** On AICore / Gemini Nano–supported Android devices, farm queries run locally on-device with zero mobile data or cloud token cost.
 - **Seamless Cloud Fallback (`gemini-3.5-flash-lite` / `gemini-3.8-flash`):** On entry-level and mid-range phones without Gemini Nano hardware (such as the Samsung Galaxy A16), FarmOS automatically detects unavailability and routes requests to Cloud Gemini via Firebase AI Logic—never leaving farmers behind.
-- **Grounded in Real Farm Records:** Unlike a generic chatbot, FarmOS injects live Firestore herd, milk yield, health, feeding, breeding, and finance records into the advisor context (`FarmAiContextRepository`) and lets farmers turn AI recommendations into scheduled farm tasks with one tap (**Save as Task**).
+- **Grounded in Real Farm Records:** Unlike a generic chatbot, FarmOS injects live Firestore herd, milk yield, health, feeding, breeding, and finance records into the advisor context (`FarmAiContextRepository`) and lets farmers turn AI recommendations into scheduled farm tasks with one tap.
 
 ---
 
@@ -86,4 +86,4 @@ Per **#BuildHybridAI 2026** Section 6 rules:
 
 ## License
 
-Licensed under the **Apache License, Version 2.0** — see [LICENSE](LICENSE).
+Licensed under the **Apache License, Version 2.0**  see [LICENSE](LICENSE).
